@@ -1,27 +1,56 @@
 {% extends 'lottery/base_adminpanel.html' %}
 
 {% block content %}
-<h2>Dashboard - All Previous Results</h2>
-<table class="table table-striped table-bordered">
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Time Slot</th>
-      <th>Row</th>
-      <th>Column</th>
-      <th>Number</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for result in results %}
-    <tr>
-      <td>{{ result.date }}</td>
-      <td>{{ result.time_slot }}</td>
-      <td>{{ result.row }}</td>
-      <td>{{ result.column }}</td>
-      <td>{{ result.number }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<style>
+td {
+  padding: 4px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.scrollable-container {
+  max-height: 85vh;  
+  overflow-y: auto;
+  padding-right: 10px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+}
+</style>
+
+<h2 class="text-center">All Previous Results</h2>
+
+<div class="scrollable-container">
+  {% for group in result_tables %}
+    <h5 class="mt-4 text-center">
+      {{ group.date }} - {{ group.time_slot }}
+    </h5>
+
+    <table class="table table-bordered text-center">
+      {% for row in group.table %}
+      <tr>
+        {% for cell in row %}
+        <td style="background-color:
+          {% if forloop.counter0 == 0 %}#FFD700
+          {% elif forloop.counter0 == 1 %}#DDA0DD
+          {% elif forloop.counter0 == 2 %}#90EE90
+          {% elif forloop.counter0 == 3 %}#FFB6C1
+          {% elif forloop.counter0 == 4 %}#CD5C5C
+          {% elif forloop.counter0 == 5 %}#F5DEB3
+          {% elif forloop.counter0 == 6 %}#ADD8E6
+          {% elif forloop.counter0 == 7 %}#FFC0CB
+          {% elif forloop.counter0 == 8 %}#87CEEB
+          {% elif forloop.counter0 == 9 %}#FFA07A
+          {% endif %};">
+          {% if cell %}
+            {{ cell.number }}
+          {% else %}
+            ----
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+  {% endfor %}
+</div>
 {% endblock %}

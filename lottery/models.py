@@ -23,5 +23,5 @@ class LotteryResult(models.Model):
 
     @property
     def is_editable(self):
-        return True  # FOR TESTING ONLY
+        return True 
 

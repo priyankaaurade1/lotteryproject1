@@ -4,6 +4,8 @@ from datetime import date
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from collections import defaultdict
+from django.db.models import Prefetch
 
 @login_required
 def admin_result_panel(request):
@@ -63,6 +65,25 @@ def update_all_results(request):
 @login_required
 def results_history(request):
     all_results = LotteryResult.objects.order_by('-date', '-time_slot')
-    return render(request, 'lottery/results_history.html', {'results': all_results})
+
+    # Group by (date, time_slot)
+    grouped = defaultdict(list)
+    for result in all_results:
+        key = (result.date, result.time_slot)
+        grouped[key].append(result)
+
+    # Convert each group into a 10x10 table (matrix)
+    result_tables = []
+    for (date, time_slot), results in grouped.items():
+        table = [[None for _ in range(10)] for _ in range(10)]
+        for result in results:
+            table[result.row][result.column] = result
+        result_tables.append({
+            'date': date,
+            'time_slot': time_slot,
+            'table': table
+        })
+
+    return render(request, 'lottery/results_history.html', {'result_tables': result_tables})
 
 
