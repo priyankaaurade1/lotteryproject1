@@ -1,26 +1,63 @@
 {% extends 'lottery/base_adminpanel.html' %}
 
 {% block content %}
-<h2>Edit Results - Current Time Slot</h2>
+<style>
+input[type="text"] {
+  font-weight: bold;
+  text-align: center;
+}
 
-<form method="POST">
+td {
+  padding: 4px;
+  vertical-align: middle !important;
+}
+
+button {
+  padding: 2px 6px;
+  font-size: 12px;
+}
+</style>
+{% if messages %}
+  <div class="container">
+    {% for message in messages %}
+      <div class="alert alert-success text-center" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<h2 class="text-center">Edit Results - Current Time Slot</h2>
+
+<form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}
   <table class="table table-bordered text-center">
     {% for row in table %}
     <tr>
       {% for cell in row %}
-      <td>
+      <td style="background-color:
+        {% if forloop.counter0 == 0 %}#FFD700
+        {% elif forloop.counter0 == 1 %}#DDA0DD
+        {% elif forloop.counter0 == 2 %}#90EE90
+        {% elif forloop.counter0 == 3 %}#FFB6C1
+        {% elif forloop.counter0 == 4 %}#CD5C5C
+        {% elif forloop.counter0 == 5 %}#F5DEB3
+        {% elif forloop.counter0 == 6 %}#ADD8E6
+        {% elif forloop.counter0 == 7 %}#FFC0CB
+        {% elif forloop.counter0 == 8 %}#87CEEB
+        {% elif forloop.counter0 == 9 %}#FFA07A
+        {% endif %};">
+
         {% if cell %}
-          {{ cell.first_two_digits }}
-          {% if cell.is_editable %}
-            <form method="POST" action="{% url 'update_result' cell.pk %}">
-              {% csrf_token %}
-              <input type="text" name="last_two" value="{{ cell.last_two_digits }}" maxlength="2" size="2" />
-              <button class="btn btn-sm btn-success">Save</button>
-            </form>
-          {% else %}
-            {{ cell.last_two_digits }}
-          {% endif %}
+          <div class="d-flex justify-content-center align-items-center">
+            <strong>{{ cell.first_two_digits }}</strong>
+            {% if cell.is_editable %}
+              <input type="hidden" name="ids" value="{{ cell.pk }}">
+              <input type="text" name="last_two_{{ cell.pk }}" value="{{ cell.last_two_digits }}" maxlength="2" size="2" class="form-control form-control-sm ms-1" style="width:50px;" />
+            {% else %}
+              <span class="ms-1">{{ cell.last_two_digits }}</span>
+            {% endif %}
+          </div>
         {% else %}
           ----
         {% endif %}
@@ -29,5 +66,9 @@
     </tr>
     {% endfor %}
   </table>
+
+  <div class="text-center mt-3">
+    <button type="submit" class="btn btn-primary">Save</button>
+  </div>
 </form>
 {% endblock %}

@@ -21,10 +21,11 @@ def edit_results(request):
     today = date.today()
     now = timezone.now()
     recent_results = LotteryResult.objects.filter(date=today).order_by('row', 'column')
-    
-    # Create grid
+
     table = [[None for _ in range(10)] for _ in range(10)]
     for result in recent_results:
+        # Log or print this to confirm
+        print(f"{result.row},{result.column} - Editable? {result.is_editable}")
         table[result.row][result.column] = result
 
     return render(request, 'lottery/edit_results.html', {
@@ -32,18 +33,36 @@ def edit_results(request):
         'now': now,
     })
 
-@login_required
-def update_result(request, pk):
-    result = get_object_or_404(LotteryResult, pk=pk)
+# @login_required
+# def update_result(request, pk):
+#     result = get_object_or_404(LotteryResult, pk=pk)
 
-    if request.method == 'POST' and result.is_editable:
-        new_last_two = request.POST.get('last_two', '')
-        if new_last_two.isdigit() and len(new_last_two) == 2:
-            result.number = result.first_two_digits + new_last_two
-            result.save()
+#     if request.method == 'POST' and result.is_editable:
+#         new_last_two = request.POST.get('last_two', '')
+#         if new_last_two.isdigit() and len(new_last_two) == 2:
+#             result.number = result.first_two_digits + new_last_two
+#             result.save()
+#     return redirect('edit_results')
+
+@login_required
+def update_all_results(request):
+    if request.method == 'POST':
+        ids = request.POST.getlist('ids')
+
+        for pk in ids:
+            result = get_object_or_404(LotteryResult, pk=pk)
+            if result.is_editable:
+                key = f'last_two_{pk}'
+                new_last_two = request.POST.get(key, '')
+                if new_last_two.isdigit() and len(new_last_two) == 2:
+                    result.number = result.first_two_digits + new_last_two
+                    result.save()
+    messages.success(request, "Lottery results updated successfully!")
     return redirect('edit_results')
 
 @login_required
 def results_history(request):
     all_results = LotteryResult.objects.order_by('-date', '-time_slot')
     return render(request, 'lottery/results_history.html', {'results': all_results})
+
+
