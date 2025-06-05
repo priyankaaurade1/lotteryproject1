@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import LotteryResult
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -86,4 +86,98 @@ def results_history(request):
 
     return render(request, 'lottery/results_history.html', {'result_tables': result_tables})
 
+def get_last_time_slot(now):
+    minutes = (now.minute // 15) * 15
+    return now.replace(minute=minutes, second=0, microsecond=0)
 
+def get_next_draw_time(now):
+    draw_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
+    draw_end = now.replace(hour=21, minute=30, second=0, microsecond=0)
+
+    if now < draw_start:
+        # Before 9:00 AM → next draw is today at 9:00 AM
+        return draw_start
+    elif now > draw_end:
+        # After 9:30 PM → next draw is tomorrow at 9:00 AM
+        next_day = now + timedelta(days=1)
+        return next_day.replace(hour=9, minute=0, second=0, microsecond=0)
+    else:
+        # During draw period → next slot rounded to next 15-minute interval
+        minutes = (now.minute // 15 + 1) * 15
+        next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
+        return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+
+def index(request):
+    now = timezone.localtime()
+    today = now.date()
+
+    # Time slots from 9:00 AM to 9:30 PM
+    time_slots = []
+    start = datetime.combine(today, time(9, 0))
+    end = datetime.combine(today, time(21, 30))
+    while start <= end:
+        time_slots.append(start.strftime('%H:%M'))
+        start += timedelta(minutes=15)
+
+    # Defaults
+    selected_date = request.POST.get("date")
+    selected_time = request.POST.get("time")
+
+    if selected_date:
+        try:
+            selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
+        except ValueError:
+            selected_date_obj = today
+    else:
+        selected_date_obj = today
+        selected_date = today.strftime("%Y-%m-%d")
+
+    if selected_time:
+        try:
+            selected_time_obj = datetime.strptime(selected_time, "%H:%M").time()
+        except ValueError:
+            selected_time_obj = get_last_time_slot(now).time()
+    else:
+        selected_time_obj = get_last_time_slot(now).time()
+        selected_time = selected_time_obj.strftime("%H:%M")
+
+    valid_start = time(9, 0)
+    valid_end = time(21, 30)
+
+    results_exist = False
+    grid = [[None for _ in range(10)] for _ in range(10)]
+
+    if valid_start <= selected_time_obj <= valid_end:
+        results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
+        results_exist = results.exists()
+
+        for result in results:
+            grid[result.row][result.column] = result
+
+        current_slot_label = selected_time_obj.strftime('%I:%M %p')
+    else:
+        current_slot_label = "No Record Found...!"
+
+    # Get next draw time (IST)
+    next_draw_time = get_next_draw_time(now)
+
+    if next_draw_time:
+        time_diff = next_draw_time - now
+        total_seconds = int(time_diff.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        next_draw_str = f"{next_draw_time.strftime('%I:%M %p')} (in {hours} hrs {minutes} mins)"
+    else:
+        next_draw_str = "No more draws today"
+
+    print(next_draw_str)
+    return render(request, 'index.html', {
+        'grid': grid,
+        'results_exist': results_exist,
+        'time_slots': time_slots,
+        'selected_date': selected_date,
+        'selected_time': selected_time,
+        'current_slot_label': current_slot_label,
+        'next_draw_str': next_draw_str,
+        'formatted_date': selected_date_obj.strftime('%d-%m-%Y'),
+    })
