@@ -1,0 +1,33 @@
+{% extends 'lottery/base_adminpanel.html' %}
+
+{% block content %}
+<h2>Edit Results - Current Time Slot</h2>
+
+<form method="POST">
+  {% csrf_token %}
+  <table class="table table-bordered text-center">
+    {% for row in table %}
+    <tr>
+      {% for cell in row %}
+      <td>
+        {% if cell %}
+          {{ cell.first_two_digits }}
+          {% if cell.is_editable %}
+            <form method="POST" action="{% url 'update_result' cell.pk %}">
+              {% csrf_token %}
+              <input type="text" name="last_two" value="{{ cell.last_two_digits }}" maxlength="2" size="2" />
+              <button class="btn btn-sm btn-success">Save</button>
+            </form>
+          {% else %}
+            {{ cell.last_two_digits }}
+          {% endif %}
+        {% else %}
+          ----
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+</form>
+{% endblock %}
