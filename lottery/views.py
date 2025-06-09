@@ -107,6 +107,7 @@ def get_next_draw_time(now):
         next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
         return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
 
+from collections import defaultdict
 def index(request):
     now = timezone.localtime()
     today = now.date()
@@ -119,10 +120,11 @@ def index(request):
         time_slots.append(start.strftime('%H:%M'))
         start += timedelta(minutes=15)
 
-    # Defaults
+    # Get POST values
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
 
+    # Parse selected date
     if selected_date:
         try:
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
@@ -132,45 +134,51 @@ def index(request):
         selected_date_obj = today
         selected_date = today.strftime("%Y-%m-%d")
 
+    # Parse selected time
     if selected_time:
         try:
             selected_time_obj = datetime.strptime(selected_time, "%H:%M").time()
         except ValueError:
             selected_time_obj = get_last_time_slot(now).time()
     else:
-        selected_time_obj = get_last_time_slot(now).time()
-        selected_time = selected_time_obj.strftime("%H:%M")
-
-    valid_start = time(9, 0)
-    valid_end = time(21, 30)
+        selected_time_obj = None  # For history view when "-- All Times --" is selected
 
     results_exist = False
+    current_slot_label = ""
     grid = [[None for _ in range(10)] for _ in range(10)]
+    history_data = {}
 
-    if valid_start <= selected_time_obj <= valid_end:
+    if selected_time_obj:
+        # Show a specific time slot (SINGLE result)
         results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
         results_exist = results.exists()
-
         for result in results:
             grid[result.row][result.column] = result
-
         current_slot_label = selected_time_obj.strftime('%I:%M %p')
     else:
-        current_slot_label = "No Record Found...!"
+        # Show all time slots for selected date (HISTORY)
+        all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
+        results_exist = all_results.exists()
+        for result in all_results:
+            time_label = result.time_slot.strftime('%I:%M %p')
+            if time_label not in history_data:
+                history_data[time_label] = [[None for _ in range(10)] for _ in range(10)]
+            history_data[time_label][result.row][result.column] = result
+        current_slot_label = "All Results"
 
-    # Get next draw time (IST)
+    # Next draw countdown logic
     next_draw_time = get_next_draw_time(now)
-
     if next_draw_time:
         time_diff = next_draw_time - now
         total_seconds = int(time_diff.total_seconds())
         hours, remainder = divmod(total_seconds, 3600)
-        minutes, _ = divmod(remainder, 60)
-        next_draw_str = f"{next_draw_time.strftime('%I:%M %p')} (in {hours} hrs {minutes} mins)"
+        minutes, seconds = divmod(remainder, 60)
+        next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+        next_draw_time_str = next_draw_time.strftime("%Y-%m-%dT%H:%M:%S")
     else:
         next_draw_str = "No more draws today"
+        next_draw_time_str = ""
 
-    print(next_draw_str)
     return render(request, 'index.html', {
         'grid': grid,
         'results_exist': results_exist,
@@ -179,5 +187,7 @@ def index(request):
         'selected_time': selected_time,
         'current_slot_label': current_slot_label,
         'next_draw_str': next_draw_str,
+        'next_draw_time_str': next_draw_time_str,
         'formatted_date': selected_date_obj.strftime('%d-%m-%Y'),
+        'history_data': history_data,
     })

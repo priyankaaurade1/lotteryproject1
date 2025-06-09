@@ -59,12 +59,12 @@
     }
   
   footer {
-    position: fixed;
+    /* position: fixed; */
     bottom: 0;
     width: 100%;
     background-color: #f2f2f2;
     text-align: center;
-    padding: 1em;
+    /* padding: 1em; */
   }
 
   .header-container {
@@ -101,7 +101,7 @@
   .time-selection form {
     display: flex;
     flex-wrap: wrap;
-    gap: 30px;
+    gap: 25px;
     align-items: center;
     justify-content: center;
     /* margin-bottom: 30px; */
@@ -159,36 +159,7 @@ td{
    </style>
 </head>
 <body>
-<div class="wrapper container-fluid">
-    <marquee behavior="" direction="" style="font-size: larger;">
-        Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
-    </marquee>
-    <div class="header-container">
-        <div class="headgrid">
-          <div class="time" style="font-size: 32px;">Time: <span id="currentTime" >--:--:--</span></div>
-          <div class="title"><strong style="font-size: 50px;font-weight: bolder;">MainsLott</strong></div>
-          <div class="next-draw" style="font-size: 32px;">Next Draw : <span id="nextDraw">{{ next_draw_str }}</span></div>
-        </div>
-      
-        <section class="time-selection">
-          <form method="post">
-            {% csrf_token %}
-            <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
-            <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
-            <button type="submit" style="background-image: linear-gradient(to bottom right, #c494d8, #ff9900);border-color: #f7d8d800 !important;width: 150px;">Submit</button>
-            <button type="button" style="background-image: linear-gradient(to bottom right, #c494d8, #ff9900);border-color: #f7d8d800 !important;width: 150px;" onclick="location.reload();">Refresh</button>
-            <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
-            <select name="time" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
-              <option value="">-- All Times --</option>
-              {% for slot in time_slots %}
-                <option value="{{ slot }}" {% if selected_time == slot %}selected{% endif %}>{{ slot }}</option>
-              {% endfor %}
-            </select>
-          </form>
-
-        </section>
-      </div>
-      <div class="row pt-1" style="padding-left: 4%;padding-right: 4%;padding-top: 1px;">
+  <!-- <div class="row pt-1" style="padding-left: 4%;padding-right: 4%;padding-top: 1px;">
           <div class="col-md-4 mb-2">
               <span style="font-size: 38px; font-weight: bold;">MainsLott</span>
           </div>
@@ -198,10 +169,48 @@ td{
           <div class="col-md-4 mb-2" style="float:right; text-align:right; margin-left: 8%;">
               <span style="font-size: 38px; font-weight: bold;">{{ formatted_date }}</span>
           </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;width:100%; margin:0 auto;">
+      </div> -->
+<div class="wrapper container-fluid">
+    <marquee behavior="" direction="" style="font-size: larger;">
+        Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
+    </marquee>
+    <div class="header-container">
+        <div class="headgrid">
+          <div class="time" style="font-size: 32px;">Time: <span id="currentTime" >--:--:--</span></div>
+          <div class="title"><strong style="font-size: 50px;font-weight: bolder;">MainsLott</strong></div>
+          <div class="next-draw" style="font-size: 32px;">Next Draw : <span id="nextDraw">--:--:--</span>
+            <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+          </div>
+        </div>
+      
+        <section class="time-selection">
+          <form method="post">
+            {% csrf_token %}
+            <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
+            <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
+            
+            <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
+            <select name="time" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
+              <option value="">-- All Times --</option>
+              {% for slot in time_slots %}
+                <option value="{{ slot }}" {% if selected_time == slot %}selected{% endif %}>{{ slot }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="button" class="btn btn-primary" onclick="location.reload();">Refresh</button>
+            <div>
+              <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
+              <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
+              <button type="button" class="btn btn-success" id="btnFull">FULL</button>
+              <button type="button" class="btn btn-success" id="btnHistory">HISTORY</button>
+              <button type="button" class="btn btn-success" id="btnResults">RESULTS</button>
+            </div>
+          </form>
 
+        </section>
+      </div>
+      <div id="fullTable" class="table-responsive">
+        <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;width:100%; margin:0 auto;">
           {% if results_exist %}
             {% for row in grid %}
               <tr>
@@ -237,9 +246,30 @@ td{
               </td>
             </tr>
           {% endif %}
-          
         </table>
       </div>
+
+      <!-- All full results -->
+       <div id="historyTable" class="table-responsive" style="display: none;">
+          {% if history_data %}
+            {% for slot, rows in history_data.items %}
+              <h4 class="text-center mt-4">{{ slot }}</h4>
+              <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;">
+                {% for row in rows %}
+                  <tr>
+                    {% for cell in row %}
+                      <td style="background-color:#f4f4f4; font-size:20px; font-weight:bold;" align="center">
+                        {{ cell.number|default:"--" }}
+                      </td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </table>
+            {% endfor %}
+          {% else %}
+            <div class="text-center p-4" style="font-size: 20px; font-weight: bold;">No previous results found.</div>
+          {% endif %}
+        </div>
 
   <footer>
     <p>&copy; 2025 Mainslott.in</p>
@@ -250,9 +280,10 @@ function updateTimes() {
     const now = new Date();
     const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
-    let hour = kolkataTime.getHours();           
-    const minute = kolkataTime.getMinutes();     
-    const second = kolkataTime.getSeconds();     
+    // Format current time
+    let hour = kolkataTime.getHours();
+    const minute = kolkataTime.getMinutes();
+    const second = kolkataTime.getSeconds();
 
     let hour12 = hour % 12;
     hour12 = hour12 === 0 ? 12 : hour12;
@@ -264,25 +295,45 @@ function updateTimes() {
     const formattedTime = `${formattedHour}:${formattedMinute}:${formattedSecond}`;
     document.getElementById("currentTime").textContent = formattedTime;
 
-    const minsToNextDraw = 15 - (minute % 15) - (second === 0 ? 0 : 1);
-    const secsToNextDraw = (60 - second) % 60;
-    const mm = String(minsToNextDraw).padStart(2, '0');
-    const ss = String(secsToNextDraw).padStart(2, '0');
-    document.getElementById("nextDraw").textContent = `${mm}:${ss}`;
-}
+    // Countdown to next draw
+    const nextDrawStr = document.getElementById("nextDrawTime").value;
+    const nextDraw = new Date(nextDrawStr);
+    const diff = nextDraw - kolkataTime;
 
+    if (diff > 0) {
+        const totalSeconds = Math.floor(diff / 1000);
+        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+        document.getElementById("nextDraw").textContent = `${hours}:${minutes}:${seconds}`;
+    } else {
+        // document.getElementById("nextDraw").textContent = "00:00:00";
+        // Optional: reload page after countdown ends
+        location.reload();
+    }
+}
 setInterval(updateTimes, 1000);
 updateTimes();
 </script>
-<!-- <script>
-function updateTime() {
-  const now = new Date();
-  const timeString = now.toLocaleTimeString();
-  document.getElementById('currentTime').textContent = timeString;
-}
-setInterval(updateTime, 1000);
-updateTime();
-</script> -->
-   
+<script>
+  document.getElementById("btnFull").addEventListener("click", function () {
+    document.getElementById("fullTable").style.display = "block";
+    document.getElementById("historyTable").style.display = "none";
+  });
+
+  document.getElementById("btnHistory").addEventListener("click", function () {
+    document.getElementById("fullTable").style.display = "none";
+    document.getElementById("historyTable").style.display = "block";
+  });
+
+  ["btnSingle", "btnTwo", "btnResults"].forEach(id => {
+    document.getElementById(id).addEventListener("click", function () {
+      document.getElementById("fullTable").style.display = "none";
+      document.getElementById("historyTable").style.display = "none";
+    });
+  });
+</script>
+ 
 </body>
 </html>
