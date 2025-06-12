@@ -159,17 +159,7 @@ td{
    </style>
 </head>
 <body>
-  <!-- <div class="row pt-1" style="padding-left: 4%;padding-right: 4%;padding-top: 1px;">
-          <div class="col-md-4 mb-2">
-              <span style="font-size: 38px; font-weight: bold;">MainsLott</span>
-          </div>
-          <div class="col-md-4 mb-2" style="display:inline; text-align:right; margin-left: -8%;">
-              <span class="time" style="font-size: 38px; text-align: center; font-weight: bold;">{{ current_slot_label }}</span>
-          </div>
-          <div class="col-md-4 mb-2" style="float:right; text-align:right; margin-left: 8%;">
-              <span style="font-size: 38px; font-weight: bold;">{{ formatted_date }}</span>
-          </div>
-      </div> -->
+
 <div class="wrapper container-fluid">
     <marquee behavior="" direction="" style="font-size: larger;">
         Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
@@ -188,12 +178,11 @@ td{
             {% csrf_token %}
             <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
             <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
-            
             <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
-            <select name="time" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
+            <select name="time" id="timeInput" style="padding-left: 10px; font-weight: bold; font-size: 20px;">
               <option value="">-- All Times --</option>
               {% for slot in time_slots %}
-                <option value="{{ slot }}" {% if selected_time == slot %}selected{% endif %}>{{ slot }}</option>
+                <option value="{{ slot }}" {% if slot == selected_time %}selected{% endif %}>{{ slot }}</option>
               {% endfor %}
             </select>
             <button type="submit" class="btn btn-primary">Submit</button>
@@ -204,11 +193,25 @@ td{
               <button type="button" class="btn btn-success" id="btnFull">FULL</button>
               <button type="button" class="btn btn-success" id="btnHistory">HISTORY</button>
               <button type="button" class="btn btn-success" id="btnResults">RESULTS</button>
+
+              <input type="hidden" name="show_history" id="show_history_input" value="">
             </div>
           </form>
-
         </section>
       </div>
+      {% if not show_history %}
+      <div class="row pt-1" style="padding-left: 4%;padding-right: 4%;padding-top: 1px;">
+        <div class="col-md-4 mb-2">
+            <span style="font-size: 38px; font-weight: bold;">MainsLott</span>
+        </div>
+        <div class="col-md-4 mb-2" style="display:inline; text-align:right; margin-left: -8%;">
+            <span class="time" style="font-size: 38px; text-align: center; font-weight: bold;">{{ current_slot_label }}</span>
+        </div>
+        <div class="col-md-4 mb-2" style="float:right; text-align:right; margin-left: 8%;">
+            <span style="font-size: 38px; font-weight: bold;">{{ formatted_date }}</span>
+        </div>
+      </div>
+      
       <div id="fullTable" class="table-responsive">
         <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;width:100%; margin:0 auto;">
           {% if results_exist %}
@@ -248,29 +251,53 @@ td{
           {% endif %}
         </table>
       </div>
-
-      <!-- All full results -->
-       <div id="historyTable" class="table-responsive" style="display: none;">
-          {% if history_data %}
-            {% for slot, rows in history_data.items %}
-              <h4 class="text-center mt-4">{{ slot }}</h4>
-              <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;">
-                {% for row in rows %}
-                  <tr>
-                    {% for cell in row %}
-                      <td style="background-color:#f4f4f4; font-size:20px; font-weight:bold;" align="center">
-                        {{ cell.number|default:"--" }}
-                      </td>
-                    {% endfor %}
-                  </tr>
-                {% endfor %}
-              </table>
-            {% endfor %}
-          {% else %}
-            <div class="text-center p-4" style="font-size: 20px; font-weight: bold;">No previous results found.</div>
-          {% endif %}
-        </div>
-
+      {% endif %}
+    
+    <!-- history results -->
+    <div id="historyTable" class="table-responsive">
+      {% if history_data %}
+        {% for slot, rows in history_data %}
+          <h4 class="text-center mt-4" style="font-size: 38px; text-align: center; font-weight: bold; margin-top: 0.5rem !important;">{{ slot }}</h4>
+          <table class="table table-bordered text-center" cellspacing="0" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;">
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  {% for cell in row %}
+                    {% if forloop.counter0 == 0 %}
+                      <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 1 %}
+                      <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 2 %}
+                      <td style="background-color:#85d825; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 3 %}
+                      <td style="background-color:#ea8d9e; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 4 %}
+                      <td style="background-color:#e3a0ef; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 5 %}
+                      <td style="background-color:#d47c8c; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 6 %}
+                      <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 7 %}
+                      <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 8 %}
+                      <td style="background-color:#5bbfec; font-size:25px; font-weight:bold;" align="center">
+                    {% elif forloop.counter0 == 9 %}
+                      <td style="background-color:#ffa7dc; font-size:25px; font-weight:bold;" align="center">
+                    {% else %}
+                      <td>
+                    {% endif %}
+                      {{ cell.number|default:"--" }}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endfor %}
+      {% else %}
+        <div class="text-center p-4" style="font-size: 20px; font-weight: bold;">No previous results found.</div>
+      {% endif %}
+    </div>
   <footer>
     <p>&copy; 2025 Mainslott.in</p>
   </footer>
@@ -317,23 +344,30 @@ setInterval(updateTimes, 1000);
 updateTimes();
 </script>
 <script>
-  document.getElementById("btnFull").addEventListener("click", function () {
-    document.getElementById("fullTable").style.display = "block";
-    document.getElementById("historyTable").style.display = "none";
-  });
-
   document.getElementById("btnHistory").addEventListener("click", function () {
-    document.getElementById("fullTable").style.display = "none";
-    document.getElementById("historyTable").style.display = "block";
+    document.getElementById("show_history_input").value = "1";
+    this.closest("form").submit();
   });
 
-  ["btnSingle", "btnTwo", "btnResults"].forEach(id => {
-    document.getElementById(id).addEventListener("click", function () {
-      document.getElementById("fullTable").style.display = "none";
-      document.getElementById("historyTable").style.display = "none";
-    });
+  document.getElementById("btnFull").addEventListener("click", function () {
+    document.getElementById("show_history_input").value = "";
+    this.closest("form").submit();
   });
+
+  document.getElementById("btnSingle").addEventListener("click", function () {
+    document.getElementById("show_history_input").value = "SINGLE";
+    document.forms[0].submit();
+});
+
+document.getElementById("btnTwo").addEventListener("click", function () {
+    document.getElementById("show_history_input").value = "TWO";
+    document.forms[0].submit();
+});
 </script>
- 
+<!-- <script>
+  window.addEventListener('load', () => {
+    document.getElementById("historyTable").scrollIntoView({ behavior: "smooth" });
+  });
+</script> -->
 </body>
 </html>

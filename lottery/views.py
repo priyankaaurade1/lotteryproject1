@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from collections import defaultdict
+from collections import defaultdict,OrderedDict
 from django.db.models import Prefetch
 
 @login_required
@@ -107,7 +107,6 @@ def get_next_draw_time(now):
         next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
         return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
 
-from collections import defaultdict
 def index(request):
     now = timezone.localtime()
     today = now.date()
@@ -120,11 +119,12 @@ def index(request):
         time_slots.append(start.strftime('%H:%M'))
         start += timedelta(minutes=15)
 
-    # Get POST values
+    # --- Get Form Values ---
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
+    show_history = request.POST.get("show_history") 
 
-    # Parse selected date
+    # --- Date Parsing ---
     if selected_date:
         try:
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
@@ -134,39 +134,54 @@ def index(request):
         selected_date_obj = today
         selected_date = today.strftime("%Y-%m-%d")
 
-    # Parse selected time
-    if selected_time:
+    # --- Time Parsing ---
+    selected_time_obj = None  
+    if show_history:
+        selected_time = None  
+        selected_time_obj = None
+    elif selected_time:
         try:
             selected_time_obj = datetime.strptime(selected_time, "%H:%M").time()
         except ValueError:
-            selected_time_obj = get_last_time_slot(now).time()
-    else:
-        selected_time_obj = None  # For history view when "-- All Times --" is selected
+            selected_time_obj = None
+    elif selected_date_obj == today:
+        selected_time_obj = get_last_time_slot(now).time()
+        selected_time = selected_time_obj.strftime('%H:%M')
 
     results_exist = False
     current_slot_label = ""
     grid = [[None for _ in range(10)] for _ in range(10)]
-    history_data = {}
+    history_data = []
+    current_time = now.time()
 
-    if selected_time_obj:
-        # Show a specific time slot (SINGLE result)
-        results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
-        results_exist = results.exists()
-        for result in results:
-            grid[result.row][result.column] = result
-        current_slot_label = selected_time_obj.strftime('%I:%M %p')
-    else:
-        # Show all time slots for selected date (HISTORY)
-        all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
+    if show_history:
+        raw_history = defaultdict(lambda: [[None for _ in range(10)] for _ in range(10)])
+        if selected_date_obj == today:
+            all_results = LotteryResult.objects.filter(
+                date=selected_date_obj,
+                time_slot__lte=current_time
+            ).order_by('time_slot')
+        else:
+            all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
         results_exist = all_results.exists()
-        for result in all_results:
-            time_label = result.time_slot.strftime('%I:%M %p')
-            if time_label not in history_data:
-                history_data[time_label] = [[None for _ in range(10)] for _ in range(10)]
-            history_data[time_label][result.row][result.column] = result
-        current_slot_label = "All Results"
 
-    # Next draw countdown logic
+        for result in all_results:
+            time_label = f"{selected_date_obj.strftime('%d-%m-%Y')} - {result.time_slot.strftime('%I:%M %p')}"
+            raw_history[time_label][result.row][result.column] = result
+            print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
+
+        # Sort by datetime descending
+        history_data = sorted(raw_history.items(), key=lambda x: datetime.strptime(x[0].split(" - ")[1], "%I:%M %p"), reverse=True)
+    else:
+        # --- Show ONLY selected time slot (single grid table)
+        if selected_time_obj:
+            results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
+            results_exist = results.exists()
+            for result in results:
+                grid[result.row][result.column] = result
+            current_slot_label = selected_time_obj.strftime('%I:%M %p')
+
+    # --- Next Draw Countdown ---
     next_draw_time = get_next_draw_time(now)
     if next_draw_time:
         time_diff = next_draw_time - now
@@ -178,6 +193,19 @@ def index(request):
     else:
         next_draw_str = "No more draws today"
         next_draw_time_str = ""
+    print("DEBUG History Data ---")
+    for label, grid in history_data:
+        print(f"{label}:")
+        for row in grid:
+            print([cell.number if cell else '--' for cell in row])
+
+    # --- Debug Logs ---
+    print("Show History?", show_history)
+    print("Selected Date:", selected_date_obj)
+    print("Selected Time:", selected_time)
+    print("Selected Time Obj:", selected_time_obj)
+    print("Rendering History Data?", bool(history_data))
+    print("Total Results:", LotteryResult.objects.filter(date=selected_date_obj).count())
 
     return render(request, 'index.html', {
         'grid': grid,
@@ -190,4 +218,5 @@ def index(request):
         'next_draw_time_str': next_draw_time_str,
         'formatted_date': selected_date_obj.strftime('%d-%m-%Y'),
         'history_data': history_data,
+        'show_history': bool(show_history),
     })
