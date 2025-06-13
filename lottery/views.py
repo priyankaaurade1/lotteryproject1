@@ -136,7 +136,7 @@ def index(request):
 
     # --- Time Parsing ---
     selected_time_obj = None  
-    if show_history:
+    if show_history == "1": 
         selected_time = None  
         selected_time_obj = None
     elif selected_time:
@@ -154,7 +154,11 @@ def index(request):
     history_data = []
     current_time = now.time()
 
-    if show_history:
+    print(f"--- Mode: {show_history} ---")
+    print(f"Selected Date: {selected_date_obj}, Time: {selected_time_obj}")
+    print(f"Total results in DB: {LotteryResult.objects.filter(date=selected_date_obj).count()}")
+
+    if  show_history == "1":
         raw_history = defaultdict(lambda: [[None for _ in range(10)] for _ in range(10)])
         if selected_date_obj == today:
             all_results = LotteryResult.objects.filter(
@@ -168,18 +172,56 @@ def index(request):
         for result in all_results:
             time_label = f"{selected_date_obj.strftime('%d-%m-%Y')} - {result.time_slot.strftime('%I:%M %p')}"
             raw_history[time_label][result.row][result.column] = result
-            print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
+            # print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
 
         # Sort by datetime descending
         history_data = sorted(raw_history.items(), key=lambda x: datetime.strptime(x[0].split(" - ")[1], "%I:%M %p"), reverse=True)
-    else:
-        # --- Show ONLY selected time slot (single grid table)
+    elif show_history == "2":  # TWO
+        grid = [[None for _ in range(10)] for _ in range(10)]
+
         if selected_time_obj:
             results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
-            results_exist = results.exists()
-            for result in results:
-                grid[result.row][result.column] = result
-            current_slot_label = selected_time_obj.strftime('%I:%M %p')
+        elif selected_date_obj == today:
+            selected_time_obj = get_last_time_slot(now).time()
+            selected_time = selected_time_obj.strftime('%H:%M')
+            results = LotteryResult.objects.filter(date=today, time_slot=selected_time_obj)
+        else:
+            results = LotteryResult.objects.filter(date=selected_date_obj)
+
+        results_exist = results.exists()
+        current_slot_label = selected_time_obj.strftime('%I:%M %p') if selected_time_obj else ""
+
+        for result in results:
+            if result.row < 10 and result.column < 10:
+                grid[result.row][result.column] = result.number[-2:]
+
+    elif show_history == "3":  # SINGLE
+        grid = [[None for _ in range(10)] for _ in range(10)]
+
+        if selected_time_obj:
+            results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
+        elif selected_date_obj == today:
+            selected_time_obj = get_last_time_slot(now).time()
+            selected_time = selected_time_obj.strftime('%H:%M')
+            results = LotteryResult.objects.filter(date=today, time_slot=selected_time_obj)
+        else:
+            results = LotteryResult.objects.filter(date=selected_date_obj)
+
+        results_exist = results.exists()
+        current_slot_label = selected_time_obj.strftime('%I:%M %p') if selected_time_obj else ""
+
+        for result in results:
+            if result.row < 10 and result.column < 10:
+                if len(result.number) >= 3:
+                    grid[result.row][result.column] = result.number[-2]  # 2nd last digit
+        
+    elif selected_time_obj:
+        # Default FULL table
+        results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
+        results_exist = results.exists()
+        for result in results:
+            grid[result.row][result.column] = result
+        current_slot_label = selected_time_obj.strftime('%I:%M %p')
 
     # --- Next Draw Countdown ---
     next_draw_time = get_next_draw_time(now)
@@ -193,22 +235,15 @@ def index(request):
     else:
         next_draw_str = "No more draws today"
         next_draw_time_str = ""
-    print("DEBUG History Data ---")
-    for label, grid in history_data:
-        print(f"{label}:")
-        for row in grid:
-            print([cell.number if cell else '--' for cell in row])
-
-    # --- Debug Logs ---
-    print("Show History?", show_history)
-    print("Selected Date:", selected_date_obj)
-    print("Selected Time:", selected_time)
-    print("Selected Time Obj:", selected_time_obj)
-    print("Rendering History Data?", bool(history_data))
-    print("Total Results:", LotteryResult.objects.filter(date=selected_date_obj).count())
-
+    # print("DEBUG History Data ---")
+    # for label, grid in history_data:
+    #     print(f"{label}:")
+    #     for row in grid:
+    #         print([cell.number if cell else '--' for cell in row])
+    column_headers = list(range(11))
     return render(request, 'index.html', {
         'grid': grid,
+        'column_headers': column_headers,
         'results_exist': results_exist,
         'time_slots': time_slots,
         'selected_date': selected_date,
@@ -218,5 +253,5 @@ def index(request):
         'next_draw_time_str': next_draw_time_str,
         'formatted_date': selected_date_obj.strftime('%d-%m-%Y'),
         'history_data': history_data,
-        'show_history': bool(show_history),
+        'show_history': show_history,
     })
