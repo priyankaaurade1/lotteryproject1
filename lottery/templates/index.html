@@ -193,13 +193,15 @@ td{
             <button type="button" class="btn btn-success" id="btnHistory">HISTORY</button>
             <button type="button" class="btn btn-success" id="btnResults">RESULTS</button>
 
-            
             <input type="hidden" name="show_history" id="show_history_input" value="">
           </div>
         </form>
       </section>
     </div>
-    {% if not show_history == "1" %}
+    <div>
+
+    </div>
+    <!-- {% if not show_history == "1" %}
     <div class="row pt-1" style="padding-left: 4%;padding-right: 4%;padding-top: 1px;">
       <div class="col-md-4 mb-2">
           <span style="font-size: 38px; font-weight: bold;">MainsLott</span>
@@ -211,10 +213,10 @@ td{
           <span style="font-size: 38px; font-weight: bold;">{{ formatted_date }}</span>
       </div>
     </div>
-    {% endif %}
-    {% if show_history == "2" or show_history == "3" %}
+    {% endif %} -->
+    {% if show_history == "1" or show_history == "2" %}
     <div class="table-responsive">
-      <table class="table table-bordered text-center" style="width: 100%;">
+      <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
         <thead>
           <tr>
             <th></th>
@@ -226,7 +228,7 @@ td{
         <tbody>
           {% for row in grid|slice:":10" %}
             <tr>
-              <th>{{ forloop.counter0 }}</th>
+              <th>{{ forloop.counter0|stringformat:"02d" }}</th>
               {% for cell in row %}
                 {% if forloop.counter0 == 0 %}
                   <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
@@ -252,14 +254,14 @@ td{
                   <td>
                 {% endif %}
                   {{ cell|default:"--" }}
-                </td>
+                  </td>
               {% endfor %}
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% elif show_history == "1" %}
+    {% elif show_history == "4" %}
     <!-- history results -->
     <div id="historyTable" class="table-responsive">
       {% if history_data %}
@@ -392,7 +394,7 @@ updateTimes();
 </script>
 <script>
   document.getElementById("btnSingle").onclick = function () {
-    document.getElementById("show_history_input").value = "3";
+    document.getElementById("show_history_input").value = "1";
     this.form.submit();
   };
   document.getElementById("btnTwo").onclick = function () {
@@ -400,11 +402,11 @@ updateTimes();
     this.form.submit();
   };
   document.getElementById("btnFull").onclick = function () {
-    document.getElementById("show_history_input").value = "";
+    document.getElementById("show_history_input").value = "3";
     this.form.submit();
   };
   document.getElementById("btnHistory").onclick = function () {
-    document.getElementById("show_history_input").value = "1";
+    document.getElementById("show_history_input").value = "4";
     this.form.submit();
   };
 </script>
