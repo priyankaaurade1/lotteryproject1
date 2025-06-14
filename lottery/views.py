@@ -153,6 +153,7 @@ def index(request):
     grid = [[None for _ in range(10)] for _ in range(10)]
     history_data = []
     current_time = now.time()
+    history_mode = request.POST.get("history_mode", "full")  
 
     print(f"--- Mode: {show_history} ---")
     print(f"Selected Date: {selected_date_obj}, Time: {selected_time_obj}")
@@ -171,7 +172,17 @@ def index(request):
 
         for result in all_results:
             time_label = f"{selected_date_obj.strftime('%d-%m-%Y')} - {result.time_slot.strftime('%I:%M %p')}"
-            raw_history[time_label][result.row][result.column] = result
+            if result.row < 10 and result.column < 10:
+                if history_mode == "single":
+                    if len(result.number) >= 3:
+                        raw_history[time_label][result.row][result.column] = result.number[-2]
+                    else:
+                        raw_history[time_label][result.row][result.column] = ""
+                elif history_mode == "two":
+                    raw_history[time_label][result.row][result.column] = result.number[-2:]
+                else:  # full (default)
+                    raw_history[time_label][result.row][result.column] = result
+
             # print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
 
         # Sort by datetime descending
@@ -271,4 +282,5 @@ def index(request):
         'formatted_date': selected_date_obj.strftime('%d-%m-%Y'),
         'history_data': history_data,
         'show_history': show_history,
+        'history_mode': history_mode,
     })

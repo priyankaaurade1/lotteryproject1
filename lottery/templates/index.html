@@ -214,6 +214,20 @@ td{
       </div>
     </div>
     {% endif %} -->
+    {% if show_history == "4" %}
+    <form method="post" id="historyModeForm">
+      {% csrf_token %}
+      <label for="history_mode">View as:</label>
+      <select name="history_mode" id="history_mode" onchange="document.getElementById('historyModeForm').submit()">
+        <option value="full" {% if history_mode == "full" %}selected{% endif %}>Full</option>
+        <option value="two" {% if history_mode == "two" %}selected{% endif %}>Two</option>
+        <option value="single" {% if history_mode == "single" %}selected{% endif %}>Single</option>
+      </select>
+      <input type="hidden" name="show_history" value="4">
+      <input type="hidden" name="date" value="{{ selected_date }}">
+    </form>
+    {% endif %}
+
     {% if show_history == "1" or show_history == "2" %}
     <div class="table-responsive">
       <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
@@ -263,48 +277,100 @@ td{
     </div>
     {% elif show_history == "4" %}
     <!-- history results -->
-    <div id="historyTable" class="table-responsive">
-      {% if history_data %}
-        {% for slot, rows in history_data %}
-          <h4 class="text-center mt-4" style="font-size: 38px; text-align: center; font-weight: bold; margin-top: 0.5rem !important;">{{ slot }}</h4>
-          <table class="table table-bordered text-center" cellspacing="0" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;">
-            <tbody>
-              {% for row in rows %}
+      {% if history_mode == "full" %}
+        <div id="historyTable" class="table-responsive">
+          {% if history_data %}
+            {% for slot, rows in history_data %}
+              <h4 class="text-center mt-4" style="font-size: 38px; text-align: center; font-weight: bold; margin-top: 0.5rem !important;">{{ slot }}</h4>
+              <table class="table table-bordered text-center" cellspacing="0" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;">
+                <tbody>
+                  {% for row in rows %}
+                    <tr>
+                      {% for cell in row %}
+                        {% if forloop.counter0 == 0 %}
+                          <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 1 %}
+                          <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 2 %}
+                          <td style="background-color:#85d825; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 3 %}
+                          <td style="background-color:#ea8d9e; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 4 %}
+                          <td style="background-color:#e3a0ef; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 5 %}
+                          <td style="background-color:#d47c8c; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 6 %}
+                          <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 7 %}
+                          <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 8 %}
+                          <td style="background-color:#5bbfec; font-size:25px; font-weight:bold;" align="center">
+                        {% elif forloop.counter0 == 9 %}
+                          <td style="background-color:#ffa7dc; font-size:25px; font-weight:bold;" align="center">
+                        {% else %}
+                          <td>
+                        {% endif %}
+                          {{ cell.number|default:"--" }}
+                        </td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% endfor %}
+          {% endif %}
+        </div>
+      {% else %}
+      {% for label, grid in history_data %}
+          <h4 style="text-align: center; margin-top: 30px;">{{ label }}</h4>
+          <div class="table-responsive">
+            <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
+              <thead>
                 <tr>
-                  {% for cell in row %}
-                    {% if forloop.counter0 == 0 %}
-                      <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 1 %}
-                      <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 2 %}
-                      <td style="background-color:#85d825; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 3 %}
-                      <td style="background-color:#ea8d9e; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 4 %}
-                      <td style="background-color:#e3a0ef; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 5 %}
-                      <td style="background-color:#d47c8c; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 6 %}
-                      <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 7 %}
-                      <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 8 %}
-                      <td style="background-color:#5bbfec; font-size:25px; font-weight:bold;" align="center">
-                    {% elif forloop.counter0 == 9 %}
-                      <td style="background-color:#ffa7dc; font-size:25px; font-weight:bold;" align="center">
-                    {% else %}
-                      <td>
-                    {% endif %}
-                      {{ cell.number|default:"--" }}
-                    </td>
+                  <th></th>
+                  {% for col in column_headers|slice:":10" %}
+                    <th>{{ col }}</th>
                   {% endfor %}
                 </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for row in grid|slice:":10" %}
+                  <tr>
+                    <th>{{ forloop.counter0|stringformat:"02d" }}</th>
+                    {% for cell in row %}
+                      {% if forloop.counter0 == 0 %}
+                        <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 1 %}
+                        <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 2 %}
+                        <td style="background-color:#85d825; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 3 %}
+                        <td style="background-color:#ea8d9e; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 4 %}
+                        <td style="background-color:#e3a0ef; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 5 %}
+                        <td style="background-color:#d47c8c; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 6 %}
+                        <td style="background-color:#ecd4d8; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 7 %}
+                        <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 8 %}
+                        <td style="background-color:#5bbfec; font-size:25px; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 9 %}
+                        <td style="background-color:#ffa7dc; font-size:25px; font-weight:bold;" align="center">
+                      {% else %}
+                        <td>
+                      {% endif %}
+                        {{ cell|default:"--" }}
+                        </td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         {% endfor %}
       {% endif %}
-    </div>
     {% else %}
     <!-- Full table button -->
     <div id="fullTable" class="table-responsive">
