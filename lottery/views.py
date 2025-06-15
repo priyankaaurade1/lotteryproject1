@@ -172,17 +172,14 @@ def index(request):
 
         for result in all_results:
             time_label = f"{selected_date_obj.strftime('%d-%m-%Y')} - {result.time_slot.strftime('%I:%M %p')}"
-            if result.row < 10 and result.column < 10:
-                if history_mode == "single":
-                    if len(result.number) >= 3:
-                        raw_history[time_label][result.row][result.column] = result.number[-2]
-                    else:
-                        raw_history[time_label][result.row][result.column] = ""
-                elif history_mode == "two":
-                    raw_history[time_label][result.row][result.column] = result.number[-2:]
-                else:  # full (default)
-                    raw_history[time_label][result.row][result.column] = result
+            cell_value = result
 
+            if history_mode == "single" and len(result.number) >= 3:
+                cell_value = result.number[-2]  # 2nd last digit
+            elif history_mode == "two":
+                cell_value = result.number[-2:]
+            
+            raw_history[time_label][result.row][result.column] = cell_value
             # print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
 
         # Sort by datetime descending

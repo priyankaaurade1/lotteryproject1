@@ -101,7 +101,7 @@
   .time-selection form {
     display: flex;
     flex-wrap: wrap;
-    gap: 25px;
+    gap: 15px;
     align-items: center;
     justify-content: center;
     /* margin-bottom: 30px; */
@@ -173,30 +173,61 @@ td{
         </div>
       </div>
       <section class="time-selection">
-        <form method="post">
-          {% csrf_token %}
-          <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
-          <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
-          <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
-          <select name="time" id="timeInput" style="padding-left: 10px; font-weight: bold; font-size: 20px;">
-            <option value="">-- All Times --</option>
-            {% for slot in time_slots %}
-              <option value="{{ slot }}" {% if slot == selected_time %}selected{% endif %}>{{ slot }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn btn-primary">Submit</button>
-          <button type="button" class="btn btn-primary" onclick="location.reload();">Refresh</button>
-          <div>
-            <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
-            <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
-            <button type="button" class="btn btn-success" id="btnFull">FULL</button>
-            <button type="button" class="btn btn-success" id="btnHistory">HISTORY</button>
-            <button type="button" class="btn btn-success" id="btnResults">RESULTS</button>
+  <form method="post" id="mainForm">
+    {% csrf_token %}
+    
+    <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
+    <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
+    
+    <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
+    <select name="time" id="timeInput" style="padding-left: 10px; font-weight: bold; font-size: 20px;">
+      <option value="" {% if not selected_time or show_history == '4' %}selected{% endif %}>-- All Times --</option>
+      {% for slot in time_slots %}
+        <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
+      {% endfor %}
+    </select>
 
-            <input type="hidden" name="show_history" id="show_history_input" value="">
-          </div>
-        </form>
-      </section>
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="button" class="btn btn-primary" onclick="location.reload();">Refresh</button>
+
+    <hr>
+
+    <!-- Buttons -->
+    <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
+    <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
+    <button type="button" class="btn btn-success" id="btnFull">FULL</button>
+
+    <!-- Dropdowns -->
+    <div class="dropdown d-inline">
+      <button class="btn btn-success dropdown-toggle" id="btnHistory" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        HISTORY
+      </button>
+      <ul class="dropdown-menu">
+        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('single')">SINGLE</button></li>
+        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('two')">TWO</button></li>
+        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('full')">FULL</button></li>
+      </ul>
+    </div>
+
+    <div class="dropdown d-inline">
+      <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        RESULTS
+      </button>
+      <ul class="dropdown-menu">
+        <li><button class="dropdown-item" type="button" onclick="setResultsModeAndSubmit('single')">SINGLE</button></li>
+        <li><button class="dropdown-item" type="button" onclick="setResultsModeAndSubmit('two')">TWO</button></li>
+        <li><button class="dropdown-item" type="button" onclick="setResultsModeAndSubmit('full')">FULL</button></li>
+      </ul>
+    </div>
+
+    <!-- Hidden Inputs -->
+    <input type="hidden" name="show_history" id="show_history_input" value="">
+    <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
+    <input type="hidden" name="show_results" value="4">
+    <input type="hidden" name="results_mode" id="results_mode_input" value="{{ results_mode|default:'full' }}">
+  </form>
+</section>
+
     </div>
     <div>
 
@@ -214,20 +245,6 @@ td{
       </div>
     </div>
     {% endif %} -->
-    {% if show_history == "4" %}
-    <form method="post" id="historyModeForm">
-      {% csrf_token %}
-      <label for="history_mode">View as:</label>
-      <select name="history_mode" id="history_mode" onchange="document.getElementById('historyModeForm').submit()">
-        <option value="full" {% if history_mode == "full" %}selected{% endif %}>Full</option>
-        <option value="two" {% if history_mode == "two" %}selected{% endif %}>Two</option>
-        <option value="single" {% if history_mode == "single" %}selected{% endif %}>Single</option>
-      </select>
-      <input type="hidden" name="show_history" value="4">
-      <input type="hidden" name="date" value="{{ selected_date }}">
-    </form>
-    {% endif %}
-
     {% if show_history == "1" or show_history == "2" %}
     <div class="table-responsive">
       <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
@@ -322,7 +339,7 @@ td{
         </div>
       {% else %}
       {% for label, grid in history_data %}
-          <h4 style="text-align: center; margin-top: 30px;">{{ label }}</h4>
+          <h4 style="font-size: 38px; text-align: center; font-weight: bold; margin-top: 0.5rem !important;">{{ label }}</h4>
           <div class="table-responsive">
             <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
               <thead>
@@ -459,24 +476,35 @@ setInterval(updateTimes, 1000);
 updateTimes();
 </script>
 <script>
-  document.getElementById("btnSingle").onclick = function () {
-    document.getElementById("show_history_input").value = "1";
-    this.form.submit();
-  };
-  document.getElementById("btnTwo").onclick = function () {
-    document.getElementById("show_history_input").value = "2";
-    this.form.submit();
-  };
-  document.getElementById("btnFull").onclick = function () {
-    document.getElementById("show_history_input").value = "3";
-    this.form.submit();
-  };
-  document.getElementById("btnHistory").onclick = function () {
-    document.getElementById("show_history_input").value = "4";
-    this.form.submit();
-  };
-</script>
+function setHistoryModeAndSubmit(mode) {
+  document.getElementById('history_mode_input').value = mode;
+  document.getElementById('mainForm').submit();
+}
 
+function setResultsModeAndSubmit(mode) {
+  document.getElementById('results_mode_input').value = mode;
+  document.getElementById('mainForm').submit();
+}
+
+document.getElementById("btnSingle").onclick = function () {
+  document.getElementById("show_history_input").value = "1";
+  document.getElementById("mainForm").submit();
+};
+document.getElementById("btnTwo").onclick = function () {
+  document.getElementById("show_history_input").value = "2";
+  document.getElementById("mainForm").submit();
+};
+document.getElementById("btnFull").onclick = function () {
+  document.getElementById("show_history_input").value = "3";
+  document.getElementById("mainForm").submit();
+};
+function setHistoryModeAndSubmit(mode) {
+  document.getElementById('show_history_input').value = "4";  // ✅ Set 4 here
+  document.getElementById('history_mode_input').value = mode;
+  document.getElementById('mainForm').submit();
+}
+
+</script>
 <!-- <script>
   window.addEventListener('load', () => {
     document.getElementById("historyTable").scrollIntoView({ behavior: "smooth" });
