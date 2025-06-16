@@ -122,7 +122,16 @@ def index(request):
     # --- Get Form Values ---
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
-    show_history = request.POST.get("show_history") 
+
+    # Set show_history and history_mode depending on request type
+    if request.method == "POST":
+        show_history = request.POST.get("show_history") or "3"
+        history_mode = request.POST.get("history_mode") or "full"
+    else:
+        show_history = "4"
+        history_mode = "full"
+
+    show_history = request.POST.get("show_history") or request.session.get("show_history", "3")
 
     # --- Date Parsing ---
     if selected_date:
@@ -153,7 +162,9 @@ def index(request):
     grid = [[None for _ in range(10)] for _ in range(10)]
     history_data = []
     current_time = now.time()
-    history_mode = request.POST.get("history_mode", "full")  
+    history_mode = request.POST.get("history_mode") or request.session.get("history_mode", "full")
+    chart_data = []
+    chart_prefix = "00" 
 
     print(f"--- Mode: {show_history} ---")
     print(f"Selected Date: {selected_date_obj}, Time: {selected_time_obj}")
@@ -251,7 +262,7 @@ def index(request):
         grid = [[None for _ in range(10)] for _ in range(10)]
 
         selected_time_obj = None
-        user_selected_time = request.POST.get("time")  # <- ⬅ Detect actual user form input
+        user_selected_time = request.POST.get("time")  
 
         if selected_time:
             try:
@@ -285,6 +296,44 @@ def index(request):
         for result in results:
             if result.row < 10 and result.column < 10:
                 grid[result.row][result.column] = result
+    if request.method == "POST":
+        history_mode = request.POST.get("history_mode")
+        request.session['show_history'] = request.POST.get("show_history")
+        request.session['history_mode'] = request.POST.get("history_mode")
+
+        if history_mode == "chart":
+            show_history = "4"
+            chart_data = []
+
+            chart_prefix = request.POST.get("chart_prefix") or "00"
+            prefix_range_start = int(chart_prefix)
+            prefix_range_end = prefix_range_start + 9
+
+            # Current time (local)
+            now = timezone.localtime()
+            current_time_only = now.time()
+
+            # Filter out results for future time slots
+            all_results = LotteryResult.objects.filter(
+                date=selected_date_obj,
+                time_slot__lte=current_time_only 
+            ).order_by('-time_slot')
+
+            for time_slot in all_results.values_list('time_slot', flat=True).distinct():
+                row = ["--"] * 10
+                slot_results = LotteryResult.objects.filter(
+                    date=selected_date_obj,
+                    time_slot=time_slot
+                )
+
+                for result in slot_results:
+                    if result.number and len(result.number) >= 4:
+                        number_prefix = int(result.number[:2])
+                        if prefix_range_start <= number_prefix <= prefix_range_end:
+                            col_index = number_prefix % 10
+                            row[col_index] = result.number
+
+                chart_data.append((time_slot.strftime("%I:%M %p"), row))
 
     # --- Next Draw Countdown ---
     next_draw_time = get_next_draw_time(now)
@@ -325,4 +374,6 @@ def index(request):
         'history_data': history_data,
         'show_history': show_history,
         'history_mode': history_mode,
+        "chart_data": chart_data,
+        "selected_chart_prefix": chart_prefix,
     })

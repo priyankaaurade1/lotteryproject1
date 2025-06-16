@@ -9,6 +9,7 @@
   <!-- <link rel="stylesheet" href="{% static 'style.css' %}"> -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
   body, h1, h2, h3, h4, h5, h6, td, span, label, input, select, button {
     font-family: "Times New Roman", serif !important;
@@ -101,7 +102,7 @@
   .time-selection form {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 10px;
     align-items: center;
     justify-content: center;
     /* margin-bottom: 30px; */
@@ -166,62 +167,57 @@ td{
     </marquee>
     <div class="header-container">
       <div class="headgrid">
-        <div class="time" style="font-size: 32px;">Time: <span id="currentTime" >--:--:--</span></div>
+        <div class="time" style="font-size: 32px;font-weight: bold;">Time: <span id="currentTime" >--:--:--</span></div>
         <div class="title"><strong style="font-size: 50px;font-weight: bolder;">MainsLott</strong></div>
-        <div class="next-draw" style="font-size: 32px;">Next Draw : <span id="nextDraw">--:--:--</span>
+        <div class="next-draw" style="font-size: 32px;font-weight: bold;">Next Draw : <span id="nextDraw">--:--:--</span>
           <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
         </div>
       </div>
       <section class="time-selection">
-  <form method="post" id="mainForm">
-    {% csrf_token %}
+        <form method="post" id="mainForm">
+          {% csrf_token %}
+          
+          <label><strong style="font-size: 25px;float: left;">Select Date:</strong></label>
+          <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 22px;width: 170px;">
+          
+          <input type="hidden" name="mode" id="modeInput" value="">
+          <label><strong style="font-size: 25px;float: right;">Select Time:</strong></label>
+          <select name="time" id="timeInput" onchange="setMode()" style="padding-left: 10px; font-weight: bold; font-size: 22px;width: 145px;padding: 5px;">
+            <option style="font-size: 18px;" {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
+            {% for slot in time_slots %}
+              <option style="font-size: 18px;" value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
+            {% endfor %}
+          </select>
+
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="button" class="btn btn-primary" onclick="location.reload();"><i class="bi bi-arrow-clockwise"></i></button>
+
+          <input type="hidden" name="debug_selected_time" value="{{ selected_time }}">
+
+          <hr>
+
+          <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
+          <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
+          <button type="button" class="btn btn-success" id="btnFull">FULL</button>
+
+          <div class="dropdown d-inline">
+            <button style="margin-bottom: 6px;" class="btn btn-success dropdown-toggle" id="btnHistory" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              HISTORY
+            </button>
+            <ul class="dropdown-menu">
+              <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('single')">SINGLE</button></li>
+              <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('two')">TWO</button></li>
+              <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('full')">FULL</button></li>
+              <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('chart')">CHART</button></li>
+            </ul>
+          </div>
+
+          <input type="hidden" name="show_history" id="show_history_input" value="{{ show_history|default:'4' }}">
+          <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
+        </form>
+      </section>
+    </div>
     
-    <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
-    <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
-    
-    <input type="hidden" name="mode" id="modeInput" value="">
-    <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
-    <select name="time" id="timeInput" onchange="setMode()" style="padding-left: 10px; font-weight: bold; font-size: 20px;">
-      <option value="" {% if not selected_time and show_history != '4' %}selected{% endif %}>-- All Times --</option>
-      {% for slot in time_slots %}
-        <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
-      {% endfor %}
-    </select>
-
-    <button type="submit" class="btn btn-primary">Submit</button>
-    <button type="button" class="btn btn-primary" onclick="location.reload();">Refresh</button>
-    <input type="hidden" name="debug_selected_time" value="{{ selected_time }}">
-
-    <hr>
-
-    <!-- Buttons -->
-    <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
-    <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
-    <button type="button" class="btn btn-success" id="btnFull">FULL</button>
-
-    <!-- Dropdowns -->
-    <div class="dropdown d-inline">
-      <button class="btn btn-success dropdown-toggle" id="btnHistory" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        HISTORY
-      </button>
-      <ul class="dropdown-menu">
-        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('single')">SINGLE</button></li>
-        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('two')">TWO</button></li>
-        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('full')">FULL</button></li>
-        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('chart')">CHART</button></li>
-      </ul>
-    </div>
-
-    <!-- Hidden Inputs -->
-    <input type="hidden" name="show_history" id="show_history_input" value="">
-    <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
-  </form>
-</section>
-
-    </div>
-    <div>
-
-    </div>
     <!-- {% if not show_history == "1" %}
     <div class="row pt-1" style="padding-left: 4%;padding-right: 4%;padding-top: 1px;">
       <div class="col-md-4 mb-2">
@@ -237,7 +233,7 @@ td{
     {% endif %} -->
     {% if show_history == "1" or show_history == "2" %}
     <div class="table-responsive">
-      <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
+      <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;border: 2px solid black;">
         <thead>
           <tr>
             <th></th>
@@ -283,13 +279,13 @@ td{
       </table>
     </div>
     {% elif show_history == "4" %}
-    <!-- history results -->
+      <!-- history results -->
       {% if history_mode == "full" %}
         <div id="historyTable" class="table-responsive">
           {% if history_data %}
             {% for slot, rows in history_data %}
               <h4 class="text-center mt-4" style="font-size: 38px; text-align: center; font-weight: bold; margin-top: 0.5rem !important;">{{ slot }}</h4>
-              <table class="table table-bordered text-center" cellspacing="0" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;">
+              <table class="table table-bordered text-center" cellspacing="0" border="1" style="border-collapse:collapse;width:100%; margin:0 auto;border: 2px solid black;">
                 <tbody>
                   {% for row in rows %}
                     <tr>
@@ -327,11 +323,71 @@ td{
             {% endfor %}
           {% endif %}
         </div>
-      {% else %}
+        {% elif history_mode == "chart" %}
+          <div id="chartbuttons" class="container chart_table my-3">
+            <form method="post" id="chartForm">
+              {% csrf_token %}
+              <input type="hidden" name="history_mode" value="chart" />
+              <div class="row g-2 justify-content-center">
+                {% for i in "0123456789"|make_list %}
+                  <div class="col-4 col-sm-3 col-md-2 col-lg-1 d-flex justify-content-center">
+                    <button type="submit" name="chart_prefix" value="{{ i }}0" class="btn btn-warning w-100">
+                      {{ i }}0
+                    </button>
+                  </div>
+                {% endfor %}
+              </div>
+            </form>
+          </div>
+
+          <table class="table table-bordered text-center">
+            <thead>
+              <tr>
+                <th style="background-color:#131a3e; color:white;">TIME</th>
+                {% for i in "0123456789"|make_list %}
+                  <th style="background-color:#131a3e; color:white;">{{ selected_chart_prefix|add:i }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody style="border: 2px solid black;">
+              {% for time_label, row in chart_data %}
+                <tr>
+                  <td style="background-color:#131a3e; color:white; font-weight:bold;">{{ time_label }}</td>
+                  {% for value in row %}
+                    {% if forloop.counter0 == 0 %}
+                      <td style="background-color:#FFEB3B; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 1 %}
+                      <td style="background-color:#ecd4d8; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 2 %}
+                      <td style="background-color:#85d825; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 3 %}
+                      <td style="background-color:#ea8d9e; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 4 %}
+                      <td style="background-color:#e3a0ef; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 5 %}
+                      <td style="background-color:#d47c8c; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 6 %}
+                      <td style="background-color:#ecd4d8; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 7 %}
+                      <td style="background-color:#FFEB3B; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 8 %}
+                      <td style="background-color:#5bbfec; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% elif forloop.counter0 == 9 %}
+                      <td style="background-color:#ffa7dc; font-size:20px; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                    {% else %}
+                      <td>{{ value|default:"--" }}</td>
+                    {% endif %}
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        {% else %}
       {% for label, grid in history_data %}
           <h4 style="font-size: 38px; text-align: center; font-weight: bold; margin-top: 0.5rem !important;">{{ label }}</h4>
           <div class="table-responsive">
-            <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;">
+            <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;border: 2px solid black;">
               <thead>
                 <tr>
                   <th></th>
@@ -381,7 +437,7 @@ td{
     {% else %}
     <!-- Full table button -->
     <div id="fullTable" class="table-responsive">
-      <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;width:100%; margin:0 auto;">
+      <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;width:100%; margin:0 auto;border: 2px solid black;">
         {% if results_exist %}
           {% for row in grid %}
             <tr>
@@ -478,16 +534,22 @@ function setResultsModeAndSubmit(mode) {
 
 document.getElementById("btnSingle").onclick = function () {
   document.getElementById("show_history_input").value = "1";
+  document.getElementById("history_mode_input").value = ""; //  Reset chart mode
   document.getElementById("mainForm").submit();
 };
+
 document.getElementById("btnTwo").onclick = function () {
   document.getElementById("show_history_input").value = "2";
+  document.getElementById("history_mode_input").value = ""; 
   document.getElementById("mainForm").submit();
 };
+
 document.getElementById("btnFull").onclick = function () {
   document.getElementById("show_history_input").value = "3";
+  document.getElementById("history_mode_input").value = ""; 
   document.getElementById("mainForm").submit();
 };
+
 function setHistoryModeAndSubmit(mode) {
   document.getElementById('show_history_input').value = "4";  // ✅ Set 4 here
   document.getElementById('history_mode_input').value = mode;
@@ -505,6 +567,49 @@ function setHistoryModeAndSubmit(mode) {
       modeInput.value = ""; 
     }
   }
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll(".chartbutton");
+    buttons.forEach(button => {
+      button.addEventListener("click", function () {
+        const start = parseInt(this.dataset.chartNumber);
+        const end = start + 10;
+
+        for (let col = 0; col < 10; col++) {
+          const show = (col >= start / 10 && col < end / 10);
+          const headerCell = document.querySelector(`.chart-column.chart${col}`);
+          if (headerCell) {
+            headerCell.style.display = show ? "table-cell" : "none";
+          }
+
+          const bodyCells = document.querySelectorAll(`.chart-column.valuetd.chart${col}`);
+          bodyCells.forEach(cell => {
+            cell.style.display = show ? "table-cell" : "none";
+          });
+        }
+      });
+    });
+
+    const showHistory = "{{ show_history }}";
+    const historyMode = "{{ history_mode }}";
+
+    if (showHistory === "4" && historyMode === "full") {
+      document.getElementById("show_history_input").value = "4";
+      document.getElementById("history_mode_input").value = "full";
+    }
+  });
+</script>
+<script>
+  window.addEventListener('load', function () {
+    // Only auto-submit if it's a fresh page load (not from history or a back button)
+    if (!window.performance || window.performance.navigation.type === 1) {
+      // Set FULL mode explicitly (if not already in context)
+      document.getElementById('show_history_input').value = '4';
+      document.getElementById('history_mode_input').value = 'full';
+      document.getElementById('mainForm').submit();
+    }
+  });
 </script>
 
 <!-- <script>
