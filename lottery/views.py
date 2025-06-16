@@ -159,6 +159,29 @@ def index(request):
     print(f"Selected Date: {selected_date_obj}, Time: {selected_time_obj}")
     print(f"Total results in DB: {LotteryResult.objects.filter(date=selected_date_obj).count()}")
 
+    #  if user selected -- All Times -- from dropdown and clicked submit
+    if request.method == "POST" and request.POST.get("time") == "" and request.POST.get("mode") == "full":
+        show_history = "4"
+        history_mode = "full"
+
+        history_data = []
+
+        # Fetch all results for selected date
+        all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
+
+        # Group results by time slot
+        time_slot_groups = {}
+        for result in all_results:
+            time_label = result.time_slot.strftime("%I:%M %p")
+            if time_label not in time_slot_groups:
+                time_slot_groups[time_label] = [[None for _ in range(10)] for _ in range(10)]
+            if result.row < 10 and result.column < 10:
+                time_slot_groups[time_label][result.row][result.column] = result
+
+        # Add to history_data
+        for label, rows in time_slot_groups.items():
+            history_data.append((label, rows))
+
     if  show_history == "4":
         raw_history = defaultdict(lambda: [[None for _ in range(10)] for _ in range(10)])
         if selected_date_obj == today:
@@ -218,32 +241,50 @@ def index(request):
             results = LotteryResult.objects.filter(date=selected_date_obj)
 
         results_exist = results.exists()
-        current_slot_label = selected_time_obj.strftime('%I:%M %p') if selected_time_obj else ""
 
         for result in results:
             if result.row < 10 and result.column < 10:
                 if len(result.number) >= 3:
-                    grid[result.row][result.column] = result.number[-2]  # 2nd last digit
-        
+                    grid[result.row][result.column] = result.number[-2]
+            
     elif show_history in [None, "", "3"]:  # FULL
         grid = [[None for _ in range(10)] for _ in range(10)]
 
+        selected_time_obj = None
+        user_selected_time = request.POST.get("time")  # <- ⬅ Detect actual user form input
+
         if selected_time:
             try:
-                selected_time_obj = datetime.strptime(selected_time, "%I:%M %p").time()  
+                selected_time_obj = datetime.strptime(selected_time, "%I:%M %p").time()
             except ValueError:
                 selected_time_obj = None
-        elif selected_date_obj == today:
-            selected_time_obj = get_last_time_slot(now).time()
-            selected_time = selected_time_obj.strftime('%I:%M %p')  
 
-        if selected_time_obj:
+        # If form submitted with empty time, show All Times
+        if not selected_time and user_selected_time == "":
+            results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
+            current_slot_label = "All Times"
+
+        #  If selected_time_obj exists, show filtered time slot
+        elif selected_time_obj:
             results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
-            results_exist = results.exists()
-            for result in results:
-                if result.row < 10 and result.column < 10:
-                    grid[result.row][result.column] = result
-            current_slot_label = selected_time_obj.strftime('%I:%M %p')
+            current_slot_label = selected_time
+
+        #  If initial load and no user time selection, show latest time for today
+        else:
+            if selected_date_obj == today:
+                selected_time_obj = get_last_time_slot(now).time()
+                selected_time = selected_time_obj.strftime('%I:%M %p')
+                results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj)
+                current_slot_label = selected_time
+            else:
+                results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
+                current_slot_label = "All Times"
+
+        results_exist = results.exists()
+
+        for result in results:
+            if result.row < 10 and result.column < 10:
+                grid[result.row][result.column] = result
 
     # --- Next Draw Countdown ---
     next_draw_time = get_next_draw_time(now)
@@ -264,6 +305,10 @@ def index(request):
     #         print([cell.number if cell else '--' for cell in row])
     print("Selected Time (raw):", selected_time)
     print("Selected Time Obj:", selected_time_obj)
+    print(print("DEBUG: POSTed selected_time =", request.POST.get("debug_selected_time")))   
+    print("DEBUG selected_time =", selected_time)
+    print("DEBUG selected_time_obj =", selected_time_obj)
+    print("DEBUG show_history =", show_history)
 
     column_headers = list(range(11))
     return render(request, 'index.html', {

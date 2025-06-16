@@ -179,9 +179,10 @@ td{
     <label><strong style="font-size: 32px;float: left;">Select Date:</strong></label>
     <input type="date" name="date" value="{{ selected_date }}" style="padding-left: 10px;font-weight: bold;font-size: 20px;">
     
+    <input type="hidden" name="mode" id="modeInput" value="">
     <label><strong style="font-size: 32px;float: right;">Select Time:</strong></label>
-    <select name="time" id="timeInput" style="padding-left: 10px; font-weight: bold; font-size: 20px;">
-      <option value="" {% if not selected_time or show_history == '4' %}selected{% endif %}>-- All Times --</option>
+    <select name="time" id="timeInput" onchange="setMode()" style="padding-left: 10px; font-weight: bold; font-size: 20px;">
+      <option value="" {% if not selected_time and show_history != '4' %}selected{% endif %}>-- All Times --</option>
       {% for slot in time_slots %}
         <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
       {% endfor %}
@@ -189,6 +190,7 @@ td{
 
     <button type="submit" class="btn btn-primary">Submit</button>
     <button type="button" class="btn btn-primary" onclick="location.reload();">Refresh</button>
+    <input type="hidden" name="debug_selected_time" value="{{ selected_time }}">
 
     <hr>
 
@@ -206,25 +208,13 @@ td{
         <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('single')">SINGLE</button></li>
         <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('two')">TWO</button></li>
         <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('full')">FULL</button></li>
-      </ul>
-    </div>
-
-    <div class="dropdown d-inline">
-      <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        RESULTS
-      </button>
-      <ul class="dropdown-menu">
-        <li><button class="dropdown-item" type="button" onclick="setResultsModeAndSubmit('single')">SINGLE</button></li>
-        <li><button class="dropdown-item" type="button" onclick="setResultsModeAndSubmit('two')">TWO</button></li>
-        <li><button class="dropdown-item" type="button" onclick="setResultsModeAndSubmit('full')">FULL</button></li>
+        <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('chart')">CHART</button></li>
       </ul>
     </div>
 
     <!-- Hidden Inputs -->
     <input type="hidden" name="show_history" id="show_history_input" value="">
     <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
-    <input type="hidden" name="show_results" value="4">
-    <input type="hidden" name="results_mode" id="results_mode_input" value="{{ results_mode|default:'full' }}">
   </form>
 </section>
 
@@ -505,6 +495,18 @@ function setHistoryModeAndSubmit(mode) {
 }
 
 </script>
+<script>
+  function setMode() {
+    const timeInput = document.getElementById('timeInput');
+    const modeInput = document.getElementById('modeInput');
+    if (timeInput.value === "") {
+      modeInput.value = "full";  
+    } else {
+      modeInput.value = ""; 
+    }
+  }
+</script>
+
 <!-- <script>
   window.addEventListener('load', () => {
     document.getElementById("historyTable").scrollIntoView({ behavior: "smooth" });
