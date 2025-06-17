@@ -27,7 +27,12 @@ button {
   </div>
 {% endif %}
 
-<h2 class="text-center">Edit Results - Current Time Slot</h2>
+<h2 class="text-center">
+  Edit Results - Current Time Slot
+  {% if time_slot %}
+    <span style="font-size: 30px;">({{ time_slot }})</span>
+  {% endif %}
+</h2>
 
 <form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}

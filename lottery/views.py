@@ -6,7 +6,40 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from collections import defaultdict,OrderedDict
 from django.db.models import Prefetch
+from django.contrib.auth import authenticate, login
+from django.contrib.sessions.models import Session
+from django.contrib.auth.models import User
 
+def logout_other_superusers(current_user):
+    """Log out all other superusers except the current one"""
+    for session in Session.objects.all():
+        data = session.get_decoded()
+        user_id = data.get('_auth_user_id')
+
+        if user_id and str(user_id) != str(current_user.id):
+            try:
+                other_user = User.objects.get(id=user_id)
+                if other_user.is_superuser:
+                    session.delete()  # force logout
+            except User.DoesNotExist:
+                pass
+
+def custom_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            if user.is_superuser:
+                logout_other_superusers(user)
+
+            login(request, user)
+            return redirect('/adminpanel/dashboard/')
+        else:
+            messages.error(request, 'Invalid username or password.')
+
+    return render(request, 'login.html')
 
 @login_required
 def admin_result_panel(request):
@@ -14,52 +47,65 @@ def admin_result_panel(request):
     results = LotteryResult.objects.filter(date=today).order_by('row', 'column')
     table = [[None for _ in range(10)] for _ in range(10)]
 
-
     for result in results:
         table[result.row][result.column] = result
-
 
     return render(request, 'lottery/admin_panel.html', {'table': table})
 
 
 @login_required
 def edit_results(request):
-    today = date.today()
-    now = timezone.now()
-    recent_results = LotteryResult.objects.filter(date=today).order_by('row', 'column')
+    now = timezone.localtime()
+    today = now.date()
 
+    # Step 1: Build all time slots (15-min intervals from 9:00 AM to 9:30 PM)
+    start = datetime.combine(today, time(9, 0))
+    end = datetime.combine(today, time(21, 30))
 
+    time_slots = []
+    while start <= end:
+        time_slots.append(start.time())
+        start += timedelta(minutes=15)
+
+    # Step 2: Find the next time slot after now
+    next_slot = next((slot for slot in time_slots if slot > now.time()), None)
+
+    if not next_slot:
+        # If day is over, show message or last slot optionally
+        return render(request, 'lottery/edit_results.html', {
+            'table': None,
+            'time_slot': None,
+            'message': 'No upcoming slot available for today.'
+        })
+
+    # Step 3: Fetch results for today and next time slot
+    results = LotteryResult.objects.filter(date=today, time_slot=next_slot)
+
+    # Step 4: Fill 10x10 grid
     table = [[None for _ in range(10)] for _ in range(10)]
-    for result in recent_results:
-        # Log or print this to confirm
-        print(f"{result.row},{result.column} - Editable? {result.is_editable}")
+    for result in results:
         table[result.row][result.column] = result
-
 
     return render(request, 'lottery/edit_results.html', {
         'table': table,
-        'now': now,
+        'time_slot': next_slot.strftime('%I:%M %p'),
     })
 
+@login_required
+def update_result(request, pk):
+    result = get_object_or_404(LotteryResult, pk=pk)
 
-# @login_required
-# def update_result(request, pk):
-#     result = get_object_or_404(LotteryResult, pk=pk)
-
-
-#     if request.method == 'POST' and result.is_editable:
-#         new_last_two = request.POST.get('last_two', '')
-#         if new_last_two.isdigit() and len(new_last_two) == 2:
-#             result.number = result.first_two_digits + new_last_two
-#             result.save()
-#     return redirect('edit_results')
-
+    if request.method == 'POST' and result.is_editable:
+        new_last_two = request.POST.get('last_two', '')
+        if new_last_two.isdigit() and len(new_last_two) == 2:
+            result.number = result.first_two_digits + new_last_two
+            result.save()
+    return redirect('edit_results')
 
 @login_required
 def update_all_results(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids')
-
 
         for pk in ids:
             result = get_object_or_404(LotteryResult, pk=pk)
@@ -72,18 +118,15 @@ def update_all_results(request):
     messages.success(request, "Lottery results updated successfully!")
     return redirect('edit_results')
 
-
 @login_required
 def results_history(request):
     all_results = LotteryResult.objects.order_by('-date', '-time_slot')
-
 
     # Group by (date, time_slot)
     grouped = defaultdict(list)
     for result in all_results:
         key = (result.date, result.time_slot)
         grouped[key].append(result)
-
 
     # Convert each group into a 10x10 table (matrix)
     result_tables = []
@@ -97,19 +140,15 @@ def results_history(request):
             'table': table
         })
 
-
     return render(request, 'lottery/results_history.html', {'result_tables': result_tables})
-
 
 def get_last_time_slot(now):
     minutes = (now.minute // 15) * 15
     return now.replace(minute=minutes, second=0, microsecond=0)
 
-
 def get_next_draw_time(now):
     draw_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
     draw_end = now.replace(hour=21, minute=30, second=0, microsecond=0)
-
 
     if now < draw_start:
         # Before 9:00 AM → next draw is today at 9:00 AM
@@ -123,7 +162,6 @@ def get_next_draw_time(now):
         minutes = (now.minute // 15 + 1) * 15
         next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
         return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
-
 
 def index(request):
     now = timezone.localtime()
