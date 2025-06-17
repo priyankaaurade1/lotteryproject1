@@ -26,18 +26,15 @@ def logout_other_superusers(current_user):
 
 def custom_login(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get("username")
+        password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
-            if user.is_superuser:
-                logout_other_superusers(user)
-
             login(request, user)
-            return redirect('/adminpanel/dashboard/')
+            return redirect('/adminpanel/dashboard/')  # ✅ Force redirect
         else:
-            messages.error(request, 'Invalid username or password.')
+            messages.error(request, "Invalid username or password.")
 
     return render(request, 'login.html')
 
