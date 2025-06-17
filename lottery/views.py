@@ -7,16 +7,20 @@ from django.contrib.auth.decorators import login_required
 from collections import defaultdict,OrderedDict
 from django.db.models import Prefetch
 
+
 @login_required
 def admin_result_panel(request):
     today = date.today()
     results = LotteryResult.objects.filter(date=today).order_by('row', 'column')
     table = [[None for _ in range(10)] for _ in range(10)]
 
+
     for result in results:
         table[result.row][result.column] = result
 
+
     return render(request, 'lottery/admin_panel.html', {'table': table})
+
 
 @login_required
 def edit_results(request):
@@ -24,20 +28,24 @@ def edit_results(request):
     now = timezone.now()
     recent_results = LotteryResult.objects.filter(date=today).order_by('row', 'column')
 
+
     table = [[None for _ in range(10)] for _ in range(10)]
     for result in recent_results:
         # Log or print this to confirm
         print(f"{result.row},{result.column} - Editable? {result.is_editable}")
         table[result.row][result.column] = result
 
+
     return render(request, 'lottery/edit_results.html', {
         'table': table,
         'now': now,
     })
 
+
 # @login_required
 # def update_result(request, pk):
 #     result = get_object_or_404(LotteryResult, pk=pk)
+
 
 #     if request.method == 'POST' and result.is_editable:
 #         new_last_two = request.POST.get('last_two', '')
@@ -46,10 +54,12 @@ def edit_results(request):
 #             result.save()
 #     return redirect('edit_results')
 
+
 @login_required
 def update_all_results(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids')
+
 
         for pk in ids:
             result = get_object_or_404(LotteryResult, pk=pk)
@@ -62,15 +72,18 @@ def update_all_results(request):
     messages.success(request, "Lottery results updated successfully!")
     return redirect('edit_results')
 
+
 @login_required
 def results_history(request):
     all_results = LotteryResult.objects.order_by('-date', '-time_slot')
+
 
     # Group by (date, time_slot)
     grouped = defaultdict(list)
     for result in all_results:
         key = (result.date, result.time_slot)
         grouped[key].append(result)
+
 
     # Convert each group into a 10x10 table (matrix)
     result_tables = []
@@ -84,15 +97,19 @@ def results_history(request):
             'table': table
         })
 
+
     return render(request, 'lottery/results_history.html', {'result_tables': result_tables})
+
 
 def get_last_time_slot(now):
     minutes = (now.minute // 15) * 15
     return now.replace(minute=minutes, second=0, microsecond=0)
 
+
 def get_next_draw_time(now):
     draw_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
     draw_end = now.replace(hour=21, minute=30, second=0, microsecond=0)
+
 
     if now < draw_start:
         # Before 9:00 AM → next draw is today at 9:00 AM
@@ -106,6 +123,7 @@ def get_next_draw_time(now):
         minutes = (now.minute // 15 + 1) * 15
         next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
         return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+
 
 def index(request):
     now = timezone.localtime()
@@ -122,6 +140,7 @@ def index(request):
     # --- Get Form Values ---
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
+    show_history = request.POST.get("show_history")
 
     # Set show_history and history_mode depending on request type
     if request.method == "POST":
@@ -130,8 +149,6 @@ def index(request):
     else:
         show_history = "4"
         history_mode = "full"
-
-    show_history = request.POST.get("show_history") or request.session.get("show_history", "3")
 
     # --- Date Parsing ---
     if selected_date:
@@ -145,7 +162,7 @@ def index(request):
 
     # --- Time Parsing ---
     selected_time_obj = None  
-    if show_history == "1": 
+    if show_history == "1":
         selected_time = None  
         selected_time_obj = None
     elif selected_time:
@@ -157,14 +174,16 @@ def index(request):
         selected_time_obj = get_last_time_slot(now).time()
         selected_time = selected_time_obj.strftime('%I:%M %p')
 
+
     results_exist = False
     current_slot_label = ""
     grid = [[None for _ in range(10)] for _ in range(10)]
     history_data = []
     current_time = now.time()
-    history_mode = request.POST.get("history_mode") or request.session.get("history_mode", "full")
+    if request.method == "POST":
+        history_mode = request.POST.get("history_mode") or history_mode
     chart_data = []
-    chart_prefix = "00" 
+    chart_prefix = "00"
 
     print(f"--- Mode: {show_history} ---")
     print(f"Selected Date: {selected_date_obj}, Time: {selected_time_obj}")
@@ -212,7 +231,7 @@ def index(request):
                 cell_value = result.number[-2]  # 2nd last digit
             elif history_mode == "two":
                 cell_value = result.number[-2:]
-            
+           
             raw_history[time_label][result.row][result.column] = cell_value
             # print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
 
@@ -226,7 +245,6 @@ def index(request):
         elif selected_date_obj == today:
             selected_time_obj = get_last_time_slot(now).time()
             selected_time = selected_time_obj.strftime('%I:%M %p')
-
             results = LotteryResult.objects.filter(date=today, time_slot=selected_time_obj)
         else:
             results = LotteryResult.objects.filter(date=selected_date_obj)
@@ -246,21 +264,18 @@ def index(request):
         elif selected_date_obj == today:
             selected_time_obj = get_last_time_slot(now).time()
             selected_time = selected_time_obj.strftime('%I:%M %p')
-
             results = LotteryResult.objects.filter(date=today, time_slot=selected_time_obj)
         else:
             results = LotteryResult.objects.filter(date=selected_date_obj)
-
         results_exist = results.exists()
 
         for result in results:
             if result.row < 10 and result.column < 10:
                 if len(result.number) >= 3:
                     grid[result.row][result.column] = result.number[-2]
-            
+           
     elif show_history in [None, "", "3"]:  # FULL
         grid = [[None for _ in range(10)] for _ in range(10)]
-
         selected_time_obj = None
         user_selected_time = request.POST.get("time")  
 
@@ -292,15 +307,11 @@ def index(request):
                 current_slot_label = "All Times"
 
         results_exist = results.exists()
-
         for result in results:
             if result.row < 10 and result.column < 10:
                 grid[result.row][result.column] = result
     if request.method == "POST":
         history_mode = request.POST.get("history_mode")
-        request.session['show_history'] = request.POST.get("show_history")
-        request.session['history_mode'] = request.POST.get("history_mode")
-
         if history_mode == "chart":
             show_history = "4"
             chart_data = []
@@ -308,15 +319,13 @@ def index(request):
             chart_prefix = request.POST.get("chart_prefix") or "00"
             prefix_range_start = int(chart_prefix)
             prefix_range_end = prefix_range_start + 9
-
             # Current time (local)
             now = timezone.localtime()
             current_time_only = now.time()
-
             # Filter out results for future time slots
             all_results = LotteryResult.objects.filter(
                 date=selected_date_obj,
-                time_slot__lte=current_time_only 
+                time_slot__lte=current_time_only
             ).order_by('-time_slot')
 
             for time_slot in all_results.values_list('time_slot', flat=True).distinct():
@@ -332,7 +341,6 @@ def index(request):
                         if prefix_range_start <= number_prefix <= prefix_range_end:
                             col_index = number_prefix % 10
                             row[col_index] = result.number
-
                 chart_data.append((time_slot.strftime("%I:%M %p"), row))
 
     # --- Next Draw Countdown ---
@@ -347,14 +355,9 @@ def index(request):
     else:
         next_draw_str = "No more draws today"
         next_draw_time_str = ""
-    # print("DEBUG History Data ---")
-    # for label, grid in history_data:
-    #     print(f"{label}:")
-    #     for row in grid:
-    #         print([cell.number if cell else '--' for cell in row])
     print("Selected Time (raw):", selected_time)
     print("Selected Time Obj:", selected_time_obj)
-    print(print("DEBUG: POSTed selected_time =", request.POST.get("debug_selected_time")))   
+    print(print("DEBUG: POSTed selected_time =", request.POST.get("debug_selected_time")))  
     print("DEBUG selected_time =", selected_time)
     print("DEBUG selected_time_obj =", selected_time_obj)
     print("DEBUG show_history =", show_history)
@@ -377,3 +380,4 @@ def index(request):
         "chart_data": chart_data,
         "selected_chart_prefix": chart_prefix,
     })
+
