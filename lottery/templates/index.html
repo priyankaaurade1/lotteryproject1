@@ -21,8 +21,6 @@
   .lottery-table td {
     font-size: 20px !important;
   }
-
-
   .headgrid .title h1,
   .time,
   .next-draw {
@@ -162,6 +160,12 @@ td{
     vertical-align: middle;
 }
    </style>
+<style>
+  #timeSelector {
+    display: block;
+    transition: all 0.3s ease;
+  }
+</style>
 </head>
 <body>
 
@@ -172,62 +176,67 @@ td{
     </marquee>
     <div class="header-container">
       <div class="headgrid">
-        <div class="time" style="font-size: 32px;font-weight: bold;">Time: <span id="currentTime" >--:--:--</span></div>
-        <div class="title"><strong style="font-size: 50px;font-weight: bolder;">MainsLott</strong></div>
-        <div class="next-draw" style="font-size: 32px;font-weight: bold;">Next Draw : <span id="nextDraw">--:--:--</span>
+        <div class="time" style="font-size: 32px;font-weight: 600;">Time: <span id="currentTime" >--:--:--</span></div>
+        <div style="font-size: 32px; font-weight: 600;">Date: <span>{{ formatted_date }}</span></div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="title" id="timeHoverZone">
+            <strong style="font-size: 50px; font-weight: bolder;">MainsLott</strong>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="location.reload();">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+        <div style="font-size: 32px; font-weight: 600;">Slot: <span>{{ current_slot_time }}</span></div>
+
+
+        <div class="next-draw" style="font-size: 32px;font-weight: 600;">Next Draw : <span id="nextDraw">--:--:--</span>
           <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
         </div>
       </div>
-      <section class="time-selection mt-3">
-  <form method="post" id="mainForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2">
-    {% csrf_token %}
+      <section class="time-selection" id="timeSelector" style="position: relative;">
+        <form method="post" id="mainForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+          {% csrf_token %}
+          <div class="d-flex align-items-center gap-2">
+            <label class="mb-0" style="font-size: 20px;"><strong>Select Date:</strong></label>
+            <input type="date" name="date" value="{{ selected_date }}" style="font-weight: bold; font-size: 18px; width: 125px;padding: 3px;">
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="mb-0" style="font-size: 20px;"><strong>Select Time:</strong></label>
+            <select name="time" id="timeInput" onchange="setMode()" style="font-weight: bold; font-size: 18px; width: 105px;padding: 5px;">
+              <option {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
+              {% for slot in time_slots %}
+                <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
+              {% endfor %}
+            </select>
+          </div>
 
-    <div class="d-flex align-items-center gap-2">
-      <label class="mb-0" style="font-size: 20px;"><strong>Select Date:</strong></label>
-      <input type="date" name="date" value="{{ selected_date }}" style="font-weight: bold; font-size: 18px; width: 125px;padding: 3px;">
-    </div>
+          <button type="submit" class="btn btn-primary">Submit</button>
 
-    <div class="d-flex align-items-center gap-2">
-      <label class="mb-0" style="font-size: 20px;"><strong>Select Time:</strong></label>
-      <select name="time" id="timeInput" onchange="setMode()" style="font-weight: bold; font-size: 18px; width: 105px;padding: 5px;">
-        <option {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
-        {% for slot in time_slots %}
-          <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
-        {% endfor %}
-      </select>
-    </div>
+          <input type="hidden" name="debug_selected_time" value="{{ selected_time }}">
+          <input type="hidden" name="mode" id="modeInput" value="">
 
-    <button type="submit" class="btn btn-primary">Submit</button>
-    <button type="button" class="btn btn-primary" onclick="location.reload();">
-      <i class="bi bi-arrow-clockwise"></i>
-    </button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
+            <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
+            <button type="button" class="btn btn-success" id="btnFull">FULL</button>
 
-    <input type="hidden" name="debug_selected_time" value="{{ selected_time }}">
-    <input type="hidden" name="mode" id="modeInput" value="">
+            <div class="dropdown dropend">
+              <button style="margin-bottom: 6px;" class="btn btn-success dropdown-toggle" id="btnHistory" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                HISTORY
+              </button>
+              <ul class="dropdown-menu">
+                <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('single')">SINGLE</button></li>
+                <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('two')">TWO</button></li>
+                <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('full')">FULL</button></li>
+                <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('chart')">CHART</button></li>
+              </ul>
+            </div>
+          </div>
 
-    <div class="d-flex align-items-center gap-2">
-      <button type="button" class="btn btn-success" id="btnSingle">SINGLE</button>
-      <button type="button" class="btn btn-success" id="btnTwo">TWO</button>
-      <button type="button" class="btn btn-success" id="btnFull">FULL</button>
-
-      <div class="dropdown">
-        <button style="margin-bottom: 6px;" class="btn btn-success dropdown-toggle" id="btnHistory" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          HISTORY
-        </button>
-        <ul class="dropdown-menu">
-          <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('single')">SINGLE</button></li>
-          <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('two')">TWO</button></li>
-          <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('full')">FULL</button></li>
-          <li><button class="dropdown-item" type="button" onclick="setHistoryModeAndSubmit('chart')">CHART</button></li>
-        </ul>
-      </div>
-    </div>
-
-    <input type="hidden" name="show_history" id="show_history_input" value="{{ show_history|default:'4' }}">
-    <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
-  </form>
-</section>
-
+          <input type="hidden" name="show_history" id="show_history_input" value="{{ show_history|default:'4' }}">
+          <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
+        </form>
+      </section>
     </div>
    
     <!-- {% if not show_history == "1" %}
@@ -257,7 +266,9 @@ td{
         <tbody>
           {% for row in grid|slice:":10" %}
             <tr style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">
-              <th style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">{{ forloop.counter0|stringformat:"02d" }}</th>
+              <th style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">
+                  {{ forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|stringformat:"02d" }}
+              </th>
               {% for cell in row %}
                 {% if forloop.counter0 == 0 %}
                   <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
@@ -409,7 +420,9 @@ td{
                 <tbody>
                   {% for row in grid|slice:":10" %}
                     <tr>
-                      <th style="background-color: #131a3e;color: white;border: 1px solid white;">{{ forloop.counter0|stringformat:"02d" }}</th>
+                      <th style="background-color: #131a3e;color: white;border: 1px solid white;">
+                        {{ forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|stringformat:"02d" }}
+                      </th>
                       {% for cell in row %}
                         {% if forloop.counter0 == 0 %}
                           <td style="background-color:#FFEB3B; font-size:25px; font-weight:bold;" align="center">
@@ -606,8 +619,6 @@ function setHistoryModeAndSubmit(mode) {
           if (headerCell) {
             headerCell.style.display = show ? "table-cell" : "none";
           }
-
-
           const bodyCells = document.querySelectorAll(`.chart-column.valuetd.chart${col}`);
           bodyCells.forEach(cell => {
             cell.style.display = show ? "table-cell" : "none";
@@ -638,6 +649,31 @@ function setHistoryModeAndSubmit(mode) {
     }
   });
 </script> 
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const showHistory = "{{ show_history }}";
+    const historyMode = "{{ history_mode }}";
+
+    const hoverZone = document.getElementById("timeHoverZone");
+    const timeSelector = document.getElementById("timeSelector");
+
+    // Only apply hide/show behavior for full history mode
+    if (showHistory === "4" && historyMode === "full") {
+      timeSelector.style.display = "none";  // initially hide
+
+      hoverZone.addEventListener("mouseenter", function () {
+        timeSelector.style.display = "block";
+      });
+
+      timeSelector.addEventListener("mouseleave", function () {
+        timeSelector.style.display = "none";
+      });
+    } else {
+      // Always show section for other modes
+      timeSelector.style.display = "block";
+    }
+  });
+</script>
 
 
 <!-- <script>

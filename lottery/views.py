@@ -163,6 +163,7 @@ def get_next_draw_time(now):
 def index(request):
     now = timezone.localtime()
     today = now.date()
+    current_slot_time = get_last_time_slot(now).time().strftime('%I:%M %p')
 
     # Time slots from 9:00 AM to 9:30 PM
     time_slots = []
@@ -390,17 +391,13 @@ def index(request):
     else:
         next_draw_str = "No more draws today"
         next_draw_time_str = ""
-    print("Selected Time (raw):", selected_time)
-    print("Selected Time Obj:", selected_time_obj)
-    print(print("DEBUG: POSTed selected_time =", request.POST.get("debug_selected_time")))  
-    print("DEBUG selected_time =", selected_time)
-    print("DEBUG selected_time_obj =", selected_time_obj)
-    print("DEBUG show_history =", show_history)
 
     column_headers = list(range(11))
+    row_headers = [f"{i:02}" for i in range(0, 100, 10)] 
     return render(request, 'index.html', {
         'grid': grid,
         'column_headers': column_headers,
+        'row_headers':row_headers,
         'results_exist': results_exist,
         'time_slots': time_slots,
         'selected_date': selected_date,
@@ -414,5 +411,6 @@ def index(request):
         'history_mode': history_mode,
         "chart_data": chart_data,
         "selected_chart_prefix": chart_prefix,
+        'current_slot_time': current_slot_time,
     })
 
