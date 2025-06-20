@@ -9,6 +9,7 @@ from django.db.models import Prefetch
 from django.contrib.auth import authenticate, login
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
+from django.utils.timezone import localtime
 
 def logout_other_superusers(current_user):
     """Log out all other superusers except the current one"""
@@ -49,36 +50,48 @@ def admin_result_panel(request):
 
     return render(request, 'lottery/admin_panel.html', {'table': table})
 
-
+from django.utils.timezone import localtime, make_aware
 @login_required
 def edit_results(request):
-    now = timezone.localtime()
+    now = localtime()
     today = now.date()
+    formatted_date = today.strftime('%d-%m-%Y')
+    current_time_str = now.strftime('%I:%M %p')  # add this
 
-    # Step 1: Build all time slots (15-min intervals from 9:00 AM to 9:30 PM)
+    # --- Generate time slots from 9:00 AM to 9:30 PM
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
-
     time_slots = []
     while start <= end:
         time_slots.append(start.time())
         start += timedelta(minutes=15)
 
-    # Step 2: Find the next time slot after now
+    # --- Get next upcoming slot
     next_slot = next((slot for slot in time_slots if slot > now.time()), None)
 
     if not next_slot:
-        # If day is over, show message or last slot optionally
         return render(request, 'lottery/edit_results.html', {
             'table': None,
             'time_slot': None,
+            'formatted_date': formatted_date,
+            'next_draw_time_str': '',
+            'next_draw_str': '',
+            'current_time_str': current_time_str,
             'message': 'No upcoming slot available for today.'
         })
 
-    # Step 3: Fetch results for today and next time slot
-    results = LotteryResult.objects.filter(date=today, time_slot=next_slot)
+    # --- Calculate next draw time
+    next_draw_datetime = make_aware(datetime.combine(today, next_slot))
+    next_draw_time_str = next_draw_datetime.strftime('%Y-%m-%dT%H:%M:%S')
 
-    # Step 4: Fill 10x10 grid
+    time_diff = next_draw_datetime - now
+    total_seconds = int(time_diff.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+
+    # --- Load results
+    results = LotteryResult.objects.filter(date=today, time_slot=next_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
     for result in results:
         table[result.row][result.column] = result
@@ -86,6 +99,10 @@ def edit_results(request):
     return render(request, 'lottery/edit_results.html', {
         'table': table,
         'time_slot': next_slot.strftime('%I:%M %p'),
+        'formatted_date': formatted_date,
+        'current_time_str': current_time_str,
+        'next_draw_time_str': next_draw_time_str,
+        'next_draw_str': next_draw_str,
     })
 
 @login_required
@@ -103,7 +120,6 @@ def update_result(request, pk):
 def update_all_results(request):
     if request.method == 'POST':
         ids = request.POST.getlist('ids')
-
         for pk in ids:
             result = get_object_or_404(LotteryResult, pk=pk)
             if result.is_editable:
@@ -112,20 +128,51 @@ def update_all_results(request):
                 if new_last_two.isdigit() and len(new_last_two) == 2:
                     result.number = result.first_two_digits + new_last_two
                     result.save()
-    messages.success(request, "Lottery results updated successfully!")
-    return redirect('edit_results')
 
+    messages.success(request, "Lottery results updated successfully!")
+    return redirect('edit_results') 
+   
 @login_required
 def results_history(request):
-    all_results = LotteryResult.objects.order_by('-date', '-time_slot')
+    now = localtime()
+    today = now.date()
 
-    # Group by (date, time_slot)
+    # --- Get selected date and time from POST
+    selected_date = request.POST.get("date") or today.strftime('%Y-%m-%d')
+    try:
+        selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
+    except ValueError:
+        selected_date_obj = today
+
+    selected_time = request.POST.get("time")  # Can be None or "All Times"
+    selected_time_obj = None
+    if selected_time and selected_time != "All Times":
+        try:
+            selected_time_obj = datetime.strptime(selected_time, "%I:%M %p").time()
+        except ValueError:
+            selected_time_obj = None
+
+    # Generate time slots
+    time_slots = []
+    start = datetime.combine(today, time(9, 0))
+    end = datetime.combine(today, time(21, 30))
+    while start <= end:
+        time_slots.append(start.strftime('%I:%M %p'))
+        start += timedelta(minutes=15)
+
+    # --- Filter results
+    if selected_time_obj:
+        all_results = LotteryResult.objects.filter(date=selected_date_obj, time_slot=selected_time_obj).order_by('-time_slot')
+    else:
+        all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('-time_slot')
+
+    # --- Group results
     grouped = defaultdict(list)
     for result in all_results:
         key = (result.date, result.time_slot)
         grouped[key].append(result)
 
-    # Convert each group into a 10x10 table (matrix)
+    # --- Convert to table
     result_tables = []
     for (date, time_slot), results in grouped.items():
         table = [[None for _ in range(10)] for _ in range(10)]
@@ -136,8 +183,14 @@ def results_history(request):
             'time_slot': time_slot,
             'table': table
         })
-
-    return render(request, 'lottery/results_history.html', {'result_tables': result_tables})
+    no_results = len(result_tables) == 0
+    return render(request, 'lottery/results_history.html', {
+        'result_tables': result_tables,
+        'selected_date': selected_date,
+        'selected_time': selected_time,
+        'time_slots': time_slots,
+        'no_results':no_results,
+    })
 
 def get_last_time_slot(now):
     minutes = (now.minute // 15) * 15
@@ -160,12 +213,12 @@ def get_next_draw_time(now):
         next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
         return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
 
+
 def index(request):
     now = timezone.localtime()
     today = now.date()
     current_slot_time = get_last_time_slot(now).time().strftime('%I:%M %p')
 
-    # Time slots from 9:00 AM to 9:30 PM
     time_slots = []
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
@@ -173,12 +226,10 @@ def index(request):
         time_slots.append(start.strftime('%I:%M %p'))
         start += timedelta(minutes=15)
 
-    # --- Get Form Values ---
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
     show_history = request.POST.get("show_history")
 
-    # Set show_history and history_mode depending on request type
     if request.method == "POST":
         show_history = request.POST.get("show_history") or "3"
         history_mode = request.POST.get("history_mode") or "full"
@@ -186,7 +237,6 @@ def index(request):
         show_history = "4"
         history_mode = "full"
 
-    # --- Date Parsing ---
     if selected_date:
         try:
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
@@ -196,7 +246,6 @@ def index(request):
         selected_date_obj = today
         selected_date = today.strftime("%Y-%m-%d")
 
-    # --- Time Parsing ---
     selected_time_obj = None  
     if show_history == "1":
         selected_time = None  
@@ -209,7 +258,6 @@ def index(request):
     elif selected_date_obj == today:
         selected_time_obj = get_last_time_slot(now).time()
         selected_time = selected_time_obj.strftime('%I:%M %p')
-
 
     results_exist = False
     current_slot_label = ""
@@ -231,11 +279,8 @@ def index(request):
         history_mode = "full"
 
         history_data = []
-
-        # Fetch all results for selected date
         all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
 
-        # Group results by time slot
         time_slot_groups = {}
         for result in all_results:
             time_label = result.time_slot.strftime("%I:%M %p")
@@ -244,7 +289,6 @@ def index(request):
             if result.row < 10 and result.column < 10:
                 time_slot_groups[time_label][result.row][result.column] = result
 
-        # Add to history_data
         for label, rows in time_slot_groups.items():
             history_data.append((label, rows))
 
@@ -271,7 +315,6 @@ def index(request):
             raw_history[time_label][result.row][result.column] = cell_value
             # print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
 
-        # Sort by datetime descending
         history_data = sorted(raw_history.items(), key=lambda x: datetime.strptime(x[0].split(" - ")[1], "%I:%M %p"), reverse=True)
     elif show_history == "2":  # TWO
         grid = [[None for _ in range(10)] for _ in range(10)]

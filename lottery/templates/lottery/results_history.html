@@ -18,6 +18,28 @@ td {
 </style>
 
 <h2 class="text-center">All Previous Results</h2>
+<br>
+<form method="post" id="historyForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-4">
+  {% csrf_token %}
+  <div class="d-flex align-items-center gap-2">
+    <label class="mb-0" style="font-size: 18px;"><strong>Select Date:</strong></label>
+    <input type="date" name="date" value="{{ selected_date }}" class="autoSubmit" style="font-weight: bold; font-size: 16px; width: 140px; padding: 4px;">
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <label class="mb-0" style="font-size: 18px;"><strong>Select Time:</strong></label>
+    <select name="time" class="autoSubmit" style="font-weight: bold; font-size: 16px; width: 140px; padding: 4px;">
+      <option {% if not selected_time or selected_time == "All Times" %}selected{% endif %}>All Times</option>
+      {% for slot in time_slots %}
+        <option value="{{ slot }}" {% if slot == selected_time %}selected{% endif %}>{{ slot }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+{% if no_results %}
+  <div class="alert alert-warning text-center mt-3">
+    No results found for the selected date and time.
+  </div>
+{% endif %}
 
 <div class="scrollable-container">
   {% for group in result_tables %}
@@ -53,4 +75,12 @@ td {
     </table>
   {% endfor %}
 </div>
+
+<script>
+  document.querySelectorAll(".autoSubmit").forEach(el => {
+    el.addEventListener("change", () => {
+      document.getElementById("historyForm").submit();
+    });
+  });
+</script>
 {% endblock %}

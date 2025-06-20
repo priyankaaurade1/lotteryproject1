@@ -169,7 +169,6 @@ td{
 </head>
 <body>
 
-
 <div class="wrapper container-fluid">
     <marquee behavior="" direction="" style="font-size: larger;">
         Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
@@ -187,22 +186,20 @@ td{
           </button>
         </div>
         <div style="font-size: 32px; font-weight: 600;">Slot: <span>{{ current_slot_time }}</span></div>
-
-
         <div class="next-draw" style="font-size: 32px;font-weight: 600;">Next Draw : <span id="nextDraw">--:--:--</span>
           <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
         </div>
       </div>
       <section class="time-selection" id="timeSelector" style="position: relative;">
-        <form method="post" id="mainForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+        <form method="post" id="mainForm" method="post" class="d-flex flex-wrap align-items-center justify-content-center gap-2">
           {% csrf_token %}
           <div class="d-flex align-items-center gap-2">
-            <label class="mb-0" style="font-size: 20px;"><strong>Select Date:</strong></label>
-            <input type="date" name="date" value="{{ selected_date }}" style="font-weight: bold; font-size: 18px; width: 125px;padding: 3px;">
+            <label class="mb-0" style="font-size: 20px;" id="dateInput"><strong>Select Date:</strong></label>
+            <input type="date" name="date" value="{{ selected_date }}" class="autoSubmit" style="font-weight: bold; font-size: 18px; width: 125px;padding: 3px;">
           </div>
           <div class="d-flex align-items-center gap-2">
             <label class="mb-0" style="font-size: 20px;"><strong>Select Time:</strong></label>
-            <select name="time" id="timeInput" onchange="setMode()" style="font-weight: bold; font-size: 18px; width: 105px;padding: 5px;">
+            <select name="time" id="timeInput" class="autoSubmit" onchange="setMode()" style="font-weight: bold; font-size: 18px; width: 105px;padding: 5px;">
               <option {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
               {% for slot in time_slots %}
                 <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
@@ -210,7 +207,7 @@ td{
             </select>
           </div>
 
-          <button type="submit" class="btn btn-primary">Submit</button>
+          <!-- <button type="submit" class="btn btn-primary">Submit</button> -->
 
           <input type="hidden" name="debug_selected_time" value="{{ selected_time }}">
           <input type="hidden" name="mode" id="modeInput" value="">
@@ -232,7 +229,6 @@ td{
               </ul>
             </div>
           </div>
-
           <input type="hidden" name="show_history" id="show_history_input" value="{{ show_history|default:'4' }}">
           <input type="hidden" name="history_mode" id="history_mode_input" value="{{ history_mode|default:'full' }}">
         </form>
@@ -253,7 +249,7 @@ td{
     </div>
     {% endif %} -->
     {% if show_history == "1" or show_history == "2" %}
-    <div class="table-responsive">
+    <div class="table-responsive" id="resultArea">
       <table class="table table-bordered text-center" style="width: 100%;font-size:25px; font-weight:bold;border: 1px solid black;">
         <thead>
           <tr>
@@ -508,38 +504,31 @@ function updateTimes() {
     const now = new Date();
     const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
-
     // Format current time
     let hour = kolkataTime.getHours();
     const minute = kolkataTime.getMinutes();
     const second = kolkataTime.getSeconds();
 
-
     let hour12 = hour % 12;
     hour12 = hour12 === 0 ? 12 : hour12;
-
 
     const formattedHour = String(hour12).padStart(2, '0');
     const formattedMinute = String(minute).padStart(2, '0');
     const formattedSecond = String(second).padStart(2, '0');
 
-
     const formattedTime = `${formattedHour}:${formattedMinute}:${formattedSecond}`;
     document.getElementById("currentTime").textContent = formattedTime;
-
 
     // Countdown to next draw
     const nextDrawStr = document.getElementById("nextDrawTime").value;
     const nextDraw = new Date(nextDrawStr);
     const diff = nextDraw - kolkataTime;
 
-
     if (diff > 0) {
         const totalSeconds = Math.floor(diff / 1000);
         const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
         const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
         const seconds = String(totalSeconds % 60).padStart(2, '0');
-
 
         document.getElementById("nextDraw").textContent = `${hours}:${minutes}:${seconds}`;
     } else {
@@ -556,13 +545,10 @@ function setHistoryModeAndSubmit(mode) {
   document.getElementById('history_mode_input').value = mode;
   document.getElementById('mainForm').submit();
 }
-
-
 function setResultsModeAndSubmit(mode) {
   document.getElementById('results_mode_input').value = mode;
   document.getElementById('mainForm').submit();
 }
-
 
 document.getElementById("btnSingle").onclick = function () {
   document.getElementById("show_history_input").value = "1";
@@ -570,13 +556,11 @@ document.getElementById("btnSingle").onclick = function () {
   document.getElementById("mainForm").submit();
 };
 
-
 document.getElementById("btnTwo").onclick = function () {
   document.getElementById("show_history_input").value = "2";
   document.getElementById("history_mode_input").value = "";
   document.getElementById("mainForm").submit();
 };
-
 
 document.getElementById("btnFull").onclick = function () {
   document.getElementById("show_history_input").value = "3";
@@ -584,14 +568,11 @@ document.getElementById("btnFull").onclick = function () {
   document.getElementById("mainForm").submit();
 };
 
-
 function setHistoryModeAndSubmit(mode) {
   document.getElementById('show_history_input').value = "4";  // ✅ Set 4 here
   document.getElementById('history_mode_input').value = mode;
   document.getElementById('mainForm').submit();
 }
-
-
 </script>
 <script>
   function setMode() {
@@ -627,10 +608,8 @@ function setHistoryModeAndSubmit(mode) {
       });
     });
 
-
     const showHistory = "{{ show_history }}";
     const historyMode = "{{ history_mode }}";
-
 
     if (showHistory === "4" && historyMode === "full") {
       document.getElementById("show_history_input").value = "4";
@@ -650,31 +629,79 @@ function setHistoryModeAndSubmit(mode) {
   });
 </script> 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const showHistory = "{{ show_history }}";
-    const historyMode = "{{ history_mode }}";
+document.addEventListener("DOMContentLoaded", function () {
+  const showHistory = "{{ show_history }}";
+  const historyMode = "{{ history_mode }}";
 
-    const hoverZone = document.getElementById("timeHoverZone");
-    const timeSelector = document.getElementById("timeSelector");
+  const hoverZone = document.getElementById("timeHoverZone");
+  const timeSelector = document.getElementById("timeSelector");
 
-    // Only apply hide/show behavior for full history mode
-    if (showHistory === "4" && historyMode === "full") {
-      timeSelector.style.display = "none";  // initially hide
+  const autoInputs = document.querySelectorAll(".autoSubmit");
 
-      hoverZone.addEventListener("mouseenter", function () {
-        timeSelector.style.display = "block";
-      });
+  // Auto-submit form when a value changes
+  autoInputs.forEach((element) => {
+    element.addEventListener("change", function () {
+      if (element.id === "timeInput") {
+        setMode();  // your custom function if needed
+      }
 
-      timeSelector.addEventListener("mouseleave", function () {
-        timeSelector.style.display = "none";
-      });
-    } else {
-      // Always show section for other modes
+      // ✅ Make sure form is visible before submitting
       timeSelector.style.display = "block";
-    }
+
+      // Delay to let mode update, then submit
+      setTimeout(() => {
+        document.getElementById("mainForm").submit();
+      }, 100); // small delay for safety
+    });
+  });
+
+  // Only apply hover show/hide if full history mode
+  if (showHistory === "4" && historyMode === "full") {
+    timeSelector.style.display = "none";
+
+    hoverZone.addEventListener("mouseenter", function () {
+      timeSelector.style.display = "block";
+    });
+
+    timeSelector.addEventListener("mouseleave", function () {
+      timeSelector.style.display = "none";
+    });
+  } else {
+    // Always show for other modes
+    timeSelector.style.display = "block";
+  }
+});
+
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const dateInput = document.getElementById("dateInput");
+    const timeInput = document.getElementById("timeInput");
+
+    dateInput.addEventListener("change", function () {
+      document.getElementById("mainForm").submit();
+    });
+
+    timeInput.addEventListener("change", function () {
+      document.getElementById("mainForm").submit();
+    });
   });
 </script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const autoInputs = document.querySelectorAll(".autoSubmit");
 
+    autoInputs.forEach((element) => {
+      element.addEventListener("change", function () {
+        if (element.id === "timeInput") {
+          setMode(); 
+        }
+        document.getElementById("mainForm").submit();
+      });
+    });
+  });
+
+</script>
 
 <!-- <script>
   window.addEventListener('load', () => {

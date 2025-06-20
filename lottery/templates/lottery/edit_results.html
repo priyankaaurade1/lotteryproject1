@@ -28,12 +28,18 @@ button {
 {% endif %}
 
 <h2 class="text-center">
-  Edit Results - Current Time Slot
-  {% if time_slot %}
-    <span style="font-size: 30px;">({{ time_slot }})</span>
-  {% endif %}
+  Edit Results
 </h2>
 
+<div style="font-size: 25px; font-weight: 500; text-align: center;">
+  <span style="margin-right: 20px;">Time: <span id="currentTime">--:--:--</span></span>
+  <span style="margin-right: 20px;">Date: <span>{{ formatted_date }}</span></span>
+  <span style="margin-right: 20px;">Slot: <span>{{ time_slot }}</span></span>
+  <span>Next Draw In: <span id="nextDraw">--:--:--</span></span>
+</div>
+<input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+
+<br>
 <form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}
   <table class="table table-bordered text-center">
@@ -73,7 +79,45 @@ button {
   </table>
 
   <div class="text-center mt-3">
-    <button type="submit" class="btn btn-primary">Save</button>
+    <button type="submit" class="btn btn-primary">Update</button>
   </div>
 </form>
+<script>
+    function updateTimes() {
+        const now = new Date();
+        const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
+        let hour = kolkataTime.getHours();
+        const minute = kolkataTime.getMinutes();
+        const second = kolkataTime.getSeconds();
+
+        let hour12 = hour % 12;
+        hour12 = hour12 === 0 ? 12 : hour12;
+
+        const formattedHour = String(hour12).padStart(2, '0');
+        const formattedMinute = String(minute).padStart(2, '0');
+        const formattedSecond = String(second).padStart(2, '0');
+
+        const formattedTime = `${formattedHour}:${formattedMinute}:${formattedSecond}`;
+        document.getElementById("currentTime").textContent = formattedTime;
+
+        // Countdown logic
+        const nextDrawStr = document.getElementById("nextDrawTime").value;
+        const nextDraw = new Date(nextDrawStr);
+        const diff = nextDraw - kolkataTime;
+
+        if (diff > 0) {
+            const totalSeconds = Math.floor(diff / 1000);
+            const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            document.getElementById("nextDraw").textContent = `${hours}:${minutes}:${seconds}`;
+        } else {
+            location.reload();
+        }
+    }
+
+    setInterval(updateTimes, 1000);
+    updateTimes();
+  </script>
 {% endblock %}
