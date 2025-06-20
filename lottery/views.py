@@ -9,7 +9,7 @@ from django.db.models import Prefetch
 from django.contrib.auth import authenticate, login
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime,make_aware
 
 def logout_other_superusers(current_user):
     """Log out all other superusers except the current one"""
@@ -50,26 +50,88 @@ def admin_result_panel(request):
 
     return render(request, 'lottery/admin_panel.html', {'table': table})
 
-from django.utils.timezone import localtime, make_aware
+# from django.utils.timezone import localtime, make_aware
+# @login_required
+# def edit_results(request):
+#     now = localtime()
+#     today = now.date()
+#     formatted_date = today.strftime('%d-%m-%Y')
+#     current_time_str = now.strftime('%I:%M %p')
+
+#     # --- Generate time slots from 9:00 AM to 9:30 PM
+#     start = datetime.combine(today, time(9, 0))
+#     end = datetime.combine(today, time(21, 30))
+#     time_slots = []
+#     while start <= end:
+#         time_slots.append(start.time())
+#         start += timedelta(minutes=15)
+
+#     # --- Get next upcoming slot
+#     next_slot = next((slot for slot in time_slots if slot > now.time()), None)
+
+#     if not next_slot:
+#         return render(request, 'lottery/edit_results.html', {
+#             'table': None,
+#             'time_slot': None,
+#             'formatted_date': formatted_date,
+#             'next_draw_time_str': '',
+#             'next_draw_str': '',
+#             'current_time_str': current_time_str,
+#             'message': 'No upcoming slot available for today.'
+#         })
+
+#     # --- Calculate next draw time
+#     next_draw_datetime = make_aware(datetime.combine(today, next_slot))
+#     next_draw_time_str = next_draw_datetime.strftime('%Y-%m-%dT%H:%M:%S')
+
+#     time_diff = next_draw_datetime - now
+#     total_seconds = int(time_diff.total_seconds())
+#     hours, remainder = divmod(total_seconds, 3600)
+#     minutes, seconds = divmod(remainder, 60)
+#     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+
+#     # --- Load results
+#     results = LotteryResult.objects.filter(date=today, time_slot=next_slot)
+#     table = [[None for _ in range(10)] for _ in range(10)]
+#     for result in results:
+#         table[result.row][result.column] = result
+
+#     return render(request, 'lottery/edit_results.html', {
+#         'table': table,
+#         'time_slot': next_slot.strftime('%I:%M %p'),
+#         'formatted_date': formatted_date,
+#         'current_time_str': current_time_str,
+#         'next_draw_time_str': next_draw_time_str,
+#         'next_draw_str': next_draw_str,
+#     })
+
 @login_required
 def edit_results(request):
     now = localtime()
     today = now.date()
     formatted_date = today.strftime('%d-%m-%Y')
-    current_time_str = now.strftime('%I:%M %p')  # add this
+    current_time_str = now.strftime('%I:%M %p')
 
-    # --- Generate time slots from 9:00 AM to 9:30 PM
-    start = datetime.combine(today, time(9, 0))
-    end = datetime.combine(today, time(21, 30))
+    # Get selected date from GET or default to today
+    selected_date_str = request.GET.get('date')
+    selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else today
+
+    # Time slots
+    start = datetime.combine(selected_date, time(9, 0))
+    end = datetime.combine(selected_date, time(21, 30))
     time_slots = []
     while start <= end:
         time_slots.append(start.time())
         start += timedelta(minutes=15)
 
-    # --- Get next upcoming slot
-    next_slot = next((slot for slot in time_slots if slot > now.time()), None)
+    # Get selected slot from GET or find next
+    selected_slot_str = request.GET.get('time_slot')
+    if selected_slot_str:
+        selected_slot = datetime.strptime(selected_slot_str, "%H:%M:%S").time()
+    else:
+        selected_slot = next((slot for slot in time_slots if selected_date == today and slot > now.time()), None)
 
-    if not next_slot:
+    if not selected_slot:
         return render(request, 'lottery/edit_results.html', {
             'table': None,
             'time_slot': None,
@@ -77,32 +139,36 @@ def edit_results(request):
             'next_draw_time_str': '',
             'next_draw_str': '',
             'current_time_str': current_time_str,
-            'message': 'No upcoming slot available for today.'
+            'message': 'No upcoming slot available for today.',
+            'selected_date': selected_date,
+            'selected_slot': None,
+            'all_slots': time_slots,
         })
 
-    # --- Calculate next draw time
-    next_draw_datetime = make_aware(datetime.combine(today, next_slot))
-    next_draw_time_str = next_draw_datetime.strftime('%Y-%m-%dT%H:%M:%S')
+    selected_datetime = make_aware(datetime.combine(selected_date, selected_slot))
+    next_draw_time_str = selected_datetime.strftime('%Y-%m-%dT%H:%M:%S')
 
-    time_diff = next_draw_datetime - now
+    time_diff = selected_datetime - now
     total_seconds = int(time_diff.total_seconds())
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
 
-    # --- Load results
-    results = LotteryResult.objects.filter(date=today, time_slot=next_slot)
+    results = LotteryResult.objects.filter(date=selected_date, time_slot=selected_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
     for result in results:
         table[result.row][result.column] = result
 
     return render(request, 'lottery/edit_results.html', {
         'table': table,
-        'time_slot': next_slot.strftime('%I:%M %p'),
+        'time_slot': selected_slot.strftime('%I:%M %p'),
         'formatted_date': formatted_date,
-        'current_time_str': current_time_str,
         'next_draw_time_str': next_draw_time_str,
         'next_draw_str': next_draw_str,
+        'current_time_str': current_time_str,
+        'selected_date': selected_date.strftime('%Y-%m-%d'),
+        'selected_slot': selected_slot,
+        'all_slots': time_slots,
     })
 
 @login_required

@@ -31,13 +31,47 @@ button {
   Edit Results
 </h2> -->
 
-<div style="font-size: 25px; font-weight: 500; text-align: center;">
-  <span style="margin-right: 20px;">Time: <span id="currentTime">--:--:--</span></span>
-  <span style="margin-right: 20px;">Date: <span>{{ formatted_date }}</span></span>
-  <span style="margin-right: 20px;">Draw Time: <span>{{ time_slot }}</span></span>
-  <span>Left Time: <span id="nextDraw">--:--:--</span></span>
+<div class="d-flex justify-content-between align-items-center mb-3" style="font-size: 20px; font-weight: 500;">
+  <div>
+    Time: <span id="currentTime">--:--:--</span>
+  </div>
+  <form method="GET" id="autoSubmitForm" class="d-flex align-items-center">
+  <label class="me-2">Select Date:</label>
+  <input type="date" name="date" value="{{ selected_date|default:'' }}" class="form-control me-3" onchange="document.getElementById('autoSubmitForm').submit()">
+  <label class="me-2">Draw Time:</label>
+  <select name="time_slot" class="form-control me-3" onchange="document.getElementById('autoSubmitForm').submit()">
+    {% for slot in all_slots %}
+      <option value="{{ slot|time:'H:i:s' }}" {% if slot == selected_slot %}selected{% endif %}>
+        {{ slot|time:'h:i A' }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
+  <div>
+    Left Time: <span id="nextDraw">--:--:--</span>
+  </div>
 </div>
+
+<!-- Hidden input for countdown logic -->
 <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+
+<!-- <div class="d-flex justify-content-center align-items-center mb-3">
+  <form method="GET" class="form-inline">
+    <label class="me-2">Select Date:</label>
+    <input type="date" name="date" value="{{ selected_date|default:'' }}" class="form-control me-3">
+
+    <label class="me-2">Select Time Slot:</label>
+    <select name="time_slot" class="form-control me-3">
+      {% for slot in all_slots %}
+        <option value="{{ slot|time:'H:i:s' }}" {% if slot == selected_slot %}selected{% endif %}>
+          {{ slot|time:'h:i A' }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Load</button>
+  </form>
+</div> -->
 
 <form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}
@@ -100,7 +134,6 @@ button {
         const formattedTime = `${formattedHour}:${formattedMinute}:${formattedSecond}`;
         document.getElementById("currentTime").textContent = formattedTime;
 
-        // Countdown logic
         const nextDrawStr = document.getElementById("nextDrawTime").value;
         const nextDraw = new Date(nextDrawStr);
         const diff = nextDraw - kolkataTime;
@@ -112,11 +145,12 @@ button {
             const seconds = String(totalSeconds % 60).padStart(2, '0');
             document.getElementById("nextDraw").textContent = `${hours}:${minutes}:${seconds}`;
         } else {
-            location.reload();
+            document.getElementById("nextDraw").textContent = "00:00:00";
         }
     }
 
     setInterval(updateTimes, 1000);
     updateTimes();
-  </script>
+</script>
+
 {% endblock %}
