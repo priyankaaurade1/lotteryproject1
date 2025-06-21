@@ -6,6 +6,7 @@ td {
   padding: 4px;
   text-align: center;
   font-weight: bold;
+  font-size: x-large;
 }
 
 .scrollable-container {
@@ -16,7 +17,11 @@ td {
   margin-top: 10px;
 }
 </style>
-
+<style>
+.table>:not(caption)>*>* {
+    padding: 0.25rem 0.4rem !important; 
+}
+</style>
 <h2 class="text-center">All Previous Results</h2>
 <form method="post" id="historyForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-4">
   {% csrf_token %}
@@ -42,15 +47,15 @@ td {
 
 <div class="scrollable-container">
   {% for group in result_tables %}
-    <h5 class="mt-4 text-center">
+    <h5 class="text-center" style="font-size: 1.50rem;">
       {{ group.date }} - {{ group.time_slot }}
     </h5>
 
-    <table class="table table-bordered text-center">
+    <table class="table table-bordered text-center" style="margin-bottom: 0rem;">
       {% for row in group.table %}
       <tr>
         {% for cell in row %}
-        <td style="background-color:
+        <td style=" background-color: 
           {% if forloop.counter0 == 0 %}#FFD700
           {% elif forloop.counter0 == 1 %}#DDA0DD
           {% elif forloop.counter0 == 2 %}#90EE90

@@ -40,83 +40,16 @@ def custom_login(request):
     return render(request, 'login.html')
 
 @login_required
-def admin_result_panel(request):
-    today = date.today()
-    results = LotteryResult.objects.filter(date=today).order_by('row', 'column')
-    table = [[None for _ in range(10)] for _ in range(10)]
-
-    for result in results:
-        table[result.row][result.column] = result
-
-    return render(request, 'lottery/admin_panel.html', {'table': table})
-
-# from django.utils.timezone import localtime, make_aware
-# @login_required
-# def edit_results(request):
-#     now = localtime()
-#     today = now.date()
-#     formatted_date = today.strftime('%d-%m-%Y')
-#     current_time_str = now.strftime('%I:%M %p')
-
-#     # --- Generate time slots from 9:00 AM to 9:30 PM
-#     start = datetime.combine(today, time(9, 0))
-#     end = datetime.combine(today, time(21, 30))
-#     time_slots = []
-#     while start <= end:
-#         time_slots.append(start.time())
-#         start += timedelta(minutes=15)
-
-#     # --- Get next upcoming slot
-#     next_slot = next((slot for slot in time_slots if slot > now.time()), None)
-
-#     if not next_slot:
-#         return render(request, 'lottery/edit_results.html', {
-#             'table': None,
-#             'time_slot': None,
-#             'formatted_date': formatted_date,
-#             'next_draw_time_str': '',
-#             'next_draw_str': '',
-#             'current_time_str': current_time_str,
-#             'message': 'No upcoming slot available for today.'
-#         })
-
-#     # --- Calculate next draw time
-#     next_draw_datetime = make_aware(datetime.combine(today, next_slot))
-#     next_draw_time_str = next_draw_datetime.strftime('%Y-%m-%dT%H:%M:%S')
-
-#     time_diff = next_draw_datetime - now
-#     total_seconds = int(time_diff.total_seconds())
-#     hours, remainder = divmod(total_seconds, 3600)
-#     minutes, seconds = divmod(remainder, 60)
-#     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-
-#     # --- Load results
-#     results = LotteryResult.objects.filter(date=today, time_slot=next_slot)
-#     table = [[None for _ in range(10)] for _ in range(10)]
-#     for result in results:
-#         table[result.row][result.column] = result
-
-#     return render(request, 'lottery/edit_results.html', {
-#         'table': table,
-#         'time_slot': next_slot.strftime('%I:%M %p'),
-#         'formatted_date': formatted_date,
-#         'current_time_str': current_time_str,
-#         'next_draw_time_str': next_draw_time_str,
-#         'next_draw_str': next_draw_str,
-#     })
-
-@login_required
 def edit_results(request):
     now = localtime()
     today = now.date()
+    current_time = now.time()
     formatted_date = today.strftime('%d-%m-%Y')
     current_time_str = now.strftime('%I:%M %p')
 
-    # Get selected date from GET or default to today
-    selected_date_str = request.GET.get('date')
+    selected_date_str = request.POST.get('date')
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else today
 
-    # Time slots
     start = datetime.combine(selected_date, time(9, 0))
     end = datetime.combine(selected_date, time(21, 30))
     time_slots = []
@@ -124,12 +57,15 @@ def edit_results(request):
         time_slots.append(start.time())
         start += timedelta(minutes=15)
 
-    # Get selected slot from GET or find next
-    selected_slot_str = request.GET.get('time_slot')
+    # Identify future slots only
+    future_slots = [slot for slot in time_slots if selected_date > today or (selected_date == today and slot > current_time)]
+
+    # Selected slot
+    selected_slot_str = request.POST.get('time_slot')
     if selected_slot_str:
         selected_slot = datetime.strptime(selected_slot_str, "%H:%M:%S").time()
     else:
-        selected_slot = next((slot for slot in time_slots if selected_date == today and slot > now.time()), None)
+        selected_slot = future_slots[0] if future_slots else None
 
     if not selected_slot:
         return render(request, 'lottery/edit_results.html', {
@@ -143,7 +79,10 @@ def edit_results(request):
             'selected_date': selected_date,
             'selected_slot': None,
             'all_slots': time_slots,
+            'is_editable': False,
         })
+
+    is_editable = selected_date > today or (selected_date == today and selected_slot > current_time)
 
     selected_datetime = make_aware(datetime.combine(selected_date, selected_slot))
     next_draw_time_str = selected_datetime.strftime('%Y-%m-%dT%H:%M:%S')
@@ -156,8 +95,31 @@ def edit_results(request):
 
     results = LotteryResult.objects.filter(date=selected_date, time_slot=selected_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
-    for result in results:
-        table[result.row][result.column] = result
+    
+    if results.exists():
+        for result in results:
+            table[result.row][result.column] = result
+    else:
+        # Create temporary dummy results only for past dates
+        if selected_date < today:
+            from collections import namedtuple
+            import random
+
+            DummyResult = namedtuple('DummyResult', ['first_two_digits', 'last_two_digits', 'pk', 'is_editable'])
+
+            for i in range(100):
+                row = i // 10
+                column = i % 10
+                prefix = f"{i:02}"
+                suffix = f"{random.randint(0, 99):02}"
+
+                dummy_result = DummyResult(
+                    first_two_digits=prefix,
+                    last_two_digits=suffix,
+                    pk=0,  # fake ID
+                    is_editable=False  # don't allow editing
+                )
+                table[row][column] = dummy_result
 
     return render(request, 'lottery/edit_results.html', {
         'table': table,
@@ -169,6 +131,7 @@ def edit_results(request):
         'selected_date': selected_date.strftime('%Y-%m-%d'),
         'selected_slot': selected_slot,
         'all_slots': time_slots,
+        'is_editable': is_editable,
     })
 
 @login_required
