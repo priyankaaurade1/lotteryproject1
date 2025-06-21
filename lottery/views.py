@@ -33,7 +33,7 @@ def custom_login(request):
 
         if user is not None:
             login(request, user)
-            return redirect('/adminpanel/dashboard/')  # ✅ Force redirect
+            return redirect('/adminpanel')  # ✅ Force redirect
         else:
             messages.error(request, "Invalid username or password.")
 
