@@ -472,6 +472,8 @@ def index(request):
 
     column_headers = list(range(11))
     row_headers = [f"{i:02}" for i in range(0, 100, 10)] 
+    selected_date_display = selected_date_obj.strftime('%d-%m-%Y')
+    selected_time_display = selected_time_obj.strftime('%I:%M %p') if selected_time_obj else (selected_time if selected_time else "All Times")
     return render(request, 'index.html', {
         'grid': grid,
         'column_headers': column_headers,
@@ -490,5 +492,7 @@ def index(request):
         "chart_data": chart_data,
         "selected_chart_prefix": chart_prefix,
         'current_slot_time': current_slot_time,
+        'selected_date_display': selected_date_display,
+        'selected_time_display': selected_time_display,
     })
 
