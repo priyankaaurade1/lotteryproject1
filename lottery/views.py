@@ -261,10 +261,12 @@ def index(request):
     if request.method == "POST":
         show_history = request.POST.get("show_history") or "3"
         history_mode = request.POST.get("history_mode") or "full"
+        mode = request.POST.get("mode") or history_mode
     else:
-        show_history = "4"
-        history_mode = "full"
-
+        show_history = "3"
+        history_mode = ""
+        mode = "full"
+        
     if selected_date:
         try:
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
@@ -324,7 +326,7 @@ def index(request):
             all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
         results_exist = all_results.exists()
         for result in all_results:
-            time_label = f"{selected_date_obj.strftime('%d-%m-%Y')} - {result.time_slot.strftime('%I:%M %p')}"
+            time_label = result.time_slot.strftime('%I:%M %p')
             cell_value = result
             if history_mode == "single" and len(result.number) >= 3:
                 cell_value = result.number[-2]  # 2nd last digit
@@ -332,7 +334,7 @@ def index(request):
                 cell_value = result.number[-2:]
             raw_history[time_label][result.row][result.column] = cell_value
             # print(f"Result: {result.number}, Row: {result.row}, Column: {result.column}, Time: {time_label}")
-        history_data = sorted(raw_history.items(), key=lambda x: datetime.strptime(x[0].split(" - ")[1], "%I:%M %p"), reverse=True)
+        history_data = sorted(raw_history.items(), key=lambda x: datetime.strptime(x[0], "%I:%M %p"), reverse=True)
     elif show_history == "2":  # TWO
         grid = [[None for _ in range(10)] for _ in range(10)]
         if selected_time_obj:
@@ -436,7 +438,11 @@ def index(request):
     column_headers = list(range(11))
     row_headers = [f"{i:02}" for i in range(0, 100, 10)] 
     selected_date_display = selected_date_obj.strftime('%d-%m-%Y')
-    selected_time_display = selected_time_obj.strftime('%I:%M %p') if selected_time_obj else (selected_time if selected_time else "All Times")
+    if selected_time_obj:
+        selected_time_display = selected_time_obj.strftime('%I:%M %p')
+    else:
+        selected_time_display = "All Times"
+
     return render(request, 'index.html', {
         'grid': grid,
         'column_headers': column_headers,
@@ -457,5 +463,6 @@ def index(request):
         'current_slot_time': current_slot_time,
         'selected_date_display': selected_date_display,
         'selected_time_display': selected_time_display,
+        'mode':mode,
     })
 
