@@ -31,6 +31,15 @@ button {
     {% endfor %}
   </div>
 {% endif %}
+{% if is_editable and user.is_superuser %}
+  <form method="post" class="mt-2 d-flex gap-2">
+    {% csrf_token %}
+    <input type="number" name="delay_minutes" placeholder="Delay (min)" class="form-control" style="width: 120px;">
+    <input type="number" name="delay_seconds" placeholder="Delay (sec)" class="form-control" style="width: 120px;">
+    <button type="submit" name="postpone" value="1" class="btn btn-warning">Postpone Draw</button>
+  </form>
+{% endif %}
+
 <div class="d-flex justify-content-between align-items-center px-3 py-2" style="font-size: 28px; font-weight: 600; background-color: #f1f1f1; border-radius: 8px; flex-wrap: wrap;">
   <div class="me-3">
     Time: <span id="currentTime">--:--:--</span>
@@ -58,9 +67,10 @@ button {
     </select>
   </div>
 </form>
-  <div class="ms-3">
-    Left Time: <span id="nextDraw">--:--:--</span>
-  </div>
+<div class="ms-3">
+  <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+  Left Time: <span id="nextDraw">--:--:--</span>
+</div>
 </div>
 <form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}
@@ -114,35 +124,71 @@ button {
     {% endif %}
   </div>
 </form>
-
 <script>
-  function updateTimes() {
-    const now = new Date();
-    const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    const currentTimeElem = document.getElementById("currentTime");
-    const nextDrawElem = document.getElementById("nextDraw");
+function updateTimes() {
+  const now = new Date();
+  const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
+  const currentTimeElem = document.getElementById("currentTime");
+  if (currentTimeElem) {
     const hours = kolkataTime.getHours();
     const minutes = kolkataTime.getMinutes();
     const seconds = kolkataTime.getSeconds();
-
-    let hour12 = hours % 12 || 12;
-    currentTimeElem.textContent = `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-    // Calculate next 15-min slot (e.g. 10:00, 10:15, 10:30, ...)
-    const totalMinutes = hours * 60 + minutes;
-    const nextSlotMinutes = Math.ceil(totalMinutes / 15) * 15;
-    const diffMinutes = nextSlotMinutes - totalMinutes;
-    const diffSeconds = diffMinutes * 60 - seconds;
-
-    const countdownHours = String(Math.floor(diffSeconds / 3600)).padStart(2, '0');
-    const countdownMinutes = String(Math.floor((diffSeconds % 3600) / 60)).padStart(2, '0');
-    const countdownSeconds = String(diffSeconds % 60).padStart(2, '0');
-
-    nextDrawElem.textContent = `${countdownHours}:${countdownMinutes}:${countdownSeconds}`;
+    const hour12 = hours % 12 || 12;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    currentTimeElem.textContent =
+      `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
   }
 
-  setInterval(updateTimes, 1000);
-  updateTimes();
+  const nextDrawInput = document.getElementById("nextDrawTime");
+  const nextDrawElem = document.getElementById("nextDraw");
+
+  if (!nextDrawInput || !nextDrawElem) return;
+
+  let nextDraw = new Date(nextDrawInput.value);
+  let diff = nextDraw - kolkataTime;
+
+  // If nextDraw time already passed (e.g. after 9:30 PM), set countdown to next day 9:00 AM
+  if (diff <= 0) {
+    const tomorrow9am = new Date(kolkataTime);
+    tomorrow9am.setDate(tomorrow9am.getDate() + 1);
+    tomorrow9am.setHours(9, 0, 0, 0);
+    diff = tomorrow9am - kolkataTime;
+  }
+
+  if (diff > 0) {
+    const totalSeconds = Math.floor(diff / 1000);
+    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const s = String(totalSeconds % 60).padStart(2, '0');
+    nextDrawElem.textContent = `${h}:${m}:${s}`;
+  } else {
+    nextDrawElem.textContent = "00:00:00";
+  }
+}
+
+setInterval(updateTimes, 1000);
+updateTimes();
 </script>
+<script>
+  // Confirm before submitting postpone
+  document.addEventListener("DOMContentLoaded", function () {
+    const postponeBtn = document.querySelector('form button[name="postpone"]');
+    if (postponeBtn) {
+      postponeBtn.addEventListener("click", function (e) {
+        const confirmPostpone = confirm("Are you sure you want to postpone draw?");
+        if (!confirmPostpone) {
+          e.preventDefault();
+        }
+      });
+    }
+
+    // Auto-hide success messages after 3 seconds
+    const alert = document.querySelector(".alert-success");
+    if (alert) {
+      setTimeout(() => alert.style.display = "none", 3000);
+    }
+  });
+</script>
+
 {% endblock %}

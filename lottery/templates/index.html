@@ -226,6 +226,7 @@ td{
             {% endfor %}
           </select>
         </div>
+        <input type="hidden" id="currentSlotTime" value="{{ current_slot_time }}">
         <!-- Buttons -->
         <button type="button" class="btn btn-success btn-sm" id="btnSingle">SINGLE</button>
         <button type="button" class="btn btn-success btn-sm" id="btnTwo">TWO</button>
@@ -712,11 +713,21 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 </script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const dropdown = document.getElementById("timeInput");
+    const currentSlot = document.getElementById("currentSlotTime")?.value;
 
-<!-- <script>
-  window.addEventListener('load', () => {
-    document.getElementById("historyTable").scrollIntoView({ behavior: "smooth" });
+    if (!dropdown || !currentSlot) return;
+
+    for (let option of dropdown.options) {
+      if (option.value.trim() === currentSlot.trim()) {
+        option.selected = true;
+        break;
+      }
+    }
   });
-</script> -->
+</script>
 </body>
 </html>
+

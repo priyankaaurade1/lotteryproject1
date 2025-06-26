@@ -41,29 +41,31 @@ def custom_login(request):
 
     return render(request, 'login.html')
 
+POSTPONE_OFFSET = timedelta()
 @login_required
 def edit_results(request):
+    global POSTPONE_OFFSET  # shared across views during server run
+
     now = localtime()
     today = now.date()
     current_time = now.time()
     formatted_date = today.strftime('%d-%m-%Y')
     current_time_str = now.strftime('%I:%M %p')
 
-    # Generate time slots (tuple of display string and time object)
+    # Generate time slots
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
     time_slots = []
     while start <= end:
         time_obj = start.time()
-        time_str = start.strftime("%I:%M %p") 
+        time_str = start.strftime("%I:%M %p")
         time_slots.append((time_str, time_obj))
         start += timedelta(minutes=15)
 
-    # Handle selected date from POST or default to today
+    # Handle selected date/time
     selected_date_str = request.POST.get('date')
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else today
 
-    # Get selected time slot string from POST and convert to time object
     selected_slot_str = request.POST.get('time_slot')
     selected_slot = None
     for label, t in time_slots:
@@ -71,12 +73,10 @@ def edit_results(request):
             selected_slot = t
             break
 
-    # If not selected, default to first future slot
     future_slots = [(label, t) for label, t in time_slots if selected_date > today or (selected_date == today and t > current_time)]
     if not selected_slot and future_slots:
         selected_slot_str, selected_slot = future_slots[0]
 
-    # If no valid future slot available
     if not selected_slot:
         return render(request, 'lottery/edit_results.html', {
             'table': None,
@@ -92,43 +92,45 @@ def edit_results(request):
             'is_editable': False,
         })
 
-    # Determine if slot is editable
-    is_editable = selected_date > today or (selected_date == today and selected_slot > current_time)
+    # ✅ Handle postpone logic
+    if request.method == "POST" and request.POST.get("postpone") == "1" and request.user.is_superuser:
+        delay_min = int(request.POST.get("delay_minutes") or 0)
+        delay_sec = int(request.POST.get("delay_seconds") or 0)
+        POSTPONE_OFFSET += timedelta(minutes=delay_min, seconds=delay_sec)
+        messages.success(request, f"Draw postponed by {delay_min}m {delay_sec}s.")
 
-    # Compute time strings
-    selected_datetime = make_aware(datetime.combine(selected_date, selected_slot))
+    # Draw edit cutoff (10 seconds before)
+    selected_datetime = make_aware(datetime.combine(selected_date, selected_slot)) + POSTPONE_OFFSET
+    now_with_offset = localtime() + POSTPONE_OFFSET
+    is_editable = selected_datetime > now_with_offset + timedelta(seconds=10)
+
+    # If draw time is already over, show tomorrow's 9:00 AM
+    if selected_datetime <= now:
+        selected_datetime = make_aware(datetime.combine(today + timedelta(days=1), time(9, 0)))
+
     next_draw_time_str = selected_datetime.strftime('%Y-%m-%dT%H:%M:%S')
-
     time_diff = selected_datetime - now
+
     total_seconds = int(time_diff.total_seconds())
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
 
-    # Load results
     results = LotteryResult.objects.filter(date=selected_date, time_slot=selected_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
-
     if results.exists():
         for result in results:
             table[result.row][result.column] = result
     else:
-        # Fill dummy data for past slots
         if selected_date < today:
             from collections import namedtuple
             import random
             DummyResult = namedtuple('DummyResult', ['first_two_digits', 'last_two_digits', 'pk', 'is_editable'])
-
             for i in range(100):
-                row = i // 10
-                column = i % 10
-                dummy = DummyResult(
-                    first_two_digits=f"{i:02}",
-                    last_two_digits=f"{random.randint(0, 99):02}",
-                    pk=0,
-                    is_editable=False
-                )
-                table[row][column] = dummy
+                table[i // 10][i % 10] = DummyResult(f"{i:02}", f"{random.randint(0, 99):02}", 0, False)
+    if not next_draw_time_str:
+        tomorrow_9am = datetime.combine(today + timedelta(days=1), time(9, 0))
+        next_draw_time_str = tomorrow_9am.strftime('%Y-%m-%dT%H:%M:%S')
 
     return render(request, 'lottery/edit_results.html', {
         'table': table,
