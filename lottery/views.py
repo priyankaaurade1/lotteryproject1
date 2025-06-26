@@ -10,6 +10,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import User
 from django.utils.timezone import localtime,make_aware
+from collections import defaultdict, namedtuple
+import random
 
 def logout_other_superusers(current_user):
     """Log out all other superusers except the current one"""
@@ -47,26 +49,34 @@ def edit_results(request):
     formatted_date = today.strftime('%d-%m-%Y')
     current_time_str = now.strftime('%I:%M %p')
 
+    # Generate time slots (tuple of display string and time object)
+    start = datetime.combine(today, time(9, 0))
+    end = datetime.combine(today, time(21, 30))
+    time_slots = []
+    while start <= end:
+        time_obj = start.time()
+        time_str = start.strftime("%I:%M %p") 
+        time_slots.append((time_str, time_obj))
+        start += timedelta(minutes=15)
+
+    # Handle selected date from POST or default to today
     selected_date_str = request.POST.get('date')
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else today
 
-    start = datetime.combine(selected_date, time(9, 0))
-    end = datetime.combine(selected_date, time(21, 30))
-    time_slots = []
-    while start <= end:
-        time_slots.append(start.time())
-        start += timedelta(minutes=15)
-
-    # Identify future slots only
-    future_slots = [slot for slot in time_slots if selected_date > today or (selected_date == today and slot > current_time)]
-
-    # Selected slot
+    # Get selected time slot string from POST and convert to time object
     selected_slot_str = request.POST.get('time_slot')
-    if selected_slot_str:
-        selected_slot = datetime.strptime(selected_slot_str, "%H:%M:%S").time()
-    else:
-        selected_slot = future_slots[0] if future_slots else None
+    selected_slot = None
+    for label, t in time_slots:
+        if label == selected_slot_str:
+            selected_slot = t
+            break
 
+    # If not selected, default to first future slot
+    future_slots = [(label, t) for label, t in time_slots if selected_date > today or (selected_date == today and t > current_time)]
+    if not selected_slot and future_slots:
+        selected_slot_str, selected_slot = future_slots[0]
+
+    # If no valid future slot available
     if not selected_slot:
         return render(request, 'lottery/edit_results.html', {
             'table': None,
@@ -76,14 +86,16 @@ def edit_results(request):
             'next_draw_str': '',
             'current_time_str': current_time_str,
             'message': 'No upcoming slot available for today.',
-            'selected_date': selected_date,
+            'selected_date': selected_date.strftime('%Y-%m-%d'),
             'selected_slot': None,
-            'all_slots': time_slots,
+            'all_slots': [label for label, _ in time_slots],
             'is_editable': False,
         })
 
+    # Determine if slot is editable
     is_editable = selected_date > today or (selected_date == today and selected_slot > current_time)
 
+    # Compute time strings
     selected_datetime = make_aware(datetime.combine(selected_date, selected_slot))
     next_draw_time_str = selected_datetime.strftime('%Y-%m-%dT%H:%M:%S')
 
@@ -93,44 +105,41 @@ def edit_results(request):
     minutes, seconds = divmod(remainder, 60)
     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
 
+    # Load results
     results = LotteryResult.objects.filter(date=selected_date, time_slot=selected_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
-    
+
     if results.exists():
         for result in results:
             table[result.row][result.column] = result
     else:
-        # Create temporary dummy results only for past dates
+        # Fill dummy data for past slots
         if selected_date < today:
             from collections import namedtuple
             import random
-
             DummyResult = namedtuple('DummyResult', ['first_two_digits', 'last_two_digits', 'pk', 'is_editable'])
 
             for i in range(100):
                 row = i // 10
                 column = i % 10
-                prefix = f"{i:02}"
-                suffix = f"{random.randint(0, 99):02}"
-
-                dummy_result = DummyResult(
-                    first_two_digits=prefix,
-                    last_two_digits=suffix,
-                    pk=0,  # fake ID
-                    is_editable=False  # don't allow editing
+                dummy = DummyResult(
+                    first_two_digits=f"{i:02}",
+                    last_two_digits=f"{random.randint(0, 99):02}",
+                    pk=0,
+                    is_editable=False
                 )
-                table[row][column] = dummy_result
+                table[row][column] = dummy
 
     return render(request, 'lottery/edit_results.html', {
         'table': table,
-        'time_slot': selected_slot.strftime('%I:%M %p'),
+        'time_slot': selected_slot_str,
         'formatted_date': formatted_date,
         'next_draw_time_str': next_draw_time_str,
         'next_draw_str': next_draw_str,
         'current_time_str': current_time_str,
         'selected_date': selected_date.strftime('%Y-%m-%d'),
-        'selected_slot': selected_slot,
-        'all_slots': time_slots,
+        'selected_slot': selected_slot_str,
+        'all_slots': [label for label, _ in time_slots],
         'is_editable': is_editable,
     })
 
@@ -183,10 +192,13 @@ def results_history(request):
 
     # Generate time slots
     time_slots = []
+    slot_labels = []
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
     while start <= end:
-        time_slots.append(start.strftime('%I:%M %p'))
+        slot_str = start.strftime('%I:%M %p')
+        time_slots.append(slot_str)
+        slot_labels.append((slot_str, start.time()))
         start += timedelta(minutes=15)
 
     # --- Filter results
@@ -203,22 +215,43 @@ def results_history(request):
 
     # --- Convert to table
     result_tables = []
-    for (date, time_slot), results in grouped.items():
+    DummyResult = namedtuple('DummyResult', ['number'])
+
+    if selected_time_obj:
+        slot_list = [(selected_date_obj, selected_time_obj)]
+    else:
+        slot_list = [(selected_date_obj, t[1]) for t in slot_labels]
+
+    for date, time_slot in slot_list:
+        results = grouped.get((date, time_slot), [])
+
         table = [[None for _ in range(10)] for _ in range(10)]
-        for result in results:
-            table[result.row][result.column] = result
+        if results:
+            for result in results:
+                table[result.row][result.column] = result
+        elif date < today:
+            # Fill dummy if past date and no real data
+            for i in range(100):
+                row = i // 10
+                col = i % 10
+                dummy = DummyResult(number=f"{random.randint(0, 9999):04}")
+                table[row][col] = dummy
+
+        formatted_time_slot = datetime.combine(date, time_slot).strftime('%I:%M %p')
         result_tables.append({
-            'date': date,
-            'time_slot': time_slot,
+            'date': date.strftime('%d-%m-%Y'),
+            'time_slot': formatted_time_slot,
             'table': table
         })
+
     no_results = len(result_tables) == 0
+
     return render(request, 'lottery/results_history.html', {
         'result_tables': result_tables,
         'selected_date': selected_date,
         'selected_time': selected_time,
         'time_slots': time_slots,
-        'no_results':no_results,
+        'no_results': no_results,
     })
 
 def get_last_time_slot(now):
