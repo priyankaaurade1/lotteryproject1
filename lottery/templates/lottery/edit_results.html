@@ -50,8 +50,8 @@ button {
             onchange="document.getElementById('autoSubmitForm').submit()">
       {% for slot in all_slots %}
         {% if selected_date != today or slot > current_time %}
-          <option value="{{ slot|time:'H:i:s' }}" {% if slot == selected_slot %}selected{% endif %}>
-            {{ slot|time:'h:i A' }}
+          <option value="{{ slot }}" {% if slot == selected_slot %}selected{% endif %}>
+            {{ slot }}
           </option>
         {% endif %}
       {% endfor %}

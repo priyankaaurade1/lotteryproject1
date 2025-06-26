@@ -16,7 +16,6 @@
     font-family: "Times New Roman", serif !important;
   }
 </style>
-
 <style>
   .container,
   .container-fluid,
@@ -30,28 +29,28 @@
   }
 </style>
   <style>  
-  html, body {
-    height: 100%;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-  }
   header {
     background-color: #f2f2f2;
     text-align: center;
   }
-    .wrapper {
-        flex: 1;
-    }
- 
-  footer {
-    /* position: fixed; */
-    bottom: 0;
-    width: 100%;
-    background-color: #f2f2f2;
-    text-align: center;
-    /* padding: 1em; */
-  }
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.wrapper {
+  flex: 1;
+}
+footer {
+  width: 100%;
+  background-color: #f2f2f2;
+  text-align: center;
+  padding: 8px 0;
+  font-weight: bold;
+}
 .head {
     text-align: center;
     margin: 0px auto;
@@ -69,12 +68,11 @@ td{
 </style>
 <style>
 .table>:not(caption)>*>* {
-    padding: 0.25rem 0.4rem !important; 
+    padding: 0.05rem 0.4rem !important; 
 }
 </style>
 <style>
   #timeSelector {
-    display: block;
     transition: all 0.3s ease;
   }
 </style>
@@ -159,7 +157,7 @@ td{
   }
   @media (min-width: 992px) {
     .result-cell {
-      font-size: 30px;
+      font-size: 35px;
       padding: 8px;
     }
     .result-heading{
@@ -170,46 +168,48 @@ td{
 </head>
 <body>
 
-<div class="wrapper container-fluid">
+<div class="container-fluid">
   <marquee behavior="" direction="" style="font-size: larger;">
       Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
   </marquee>
-  <div class="head container-fluid bg-light py-1 px-2">
+  <div class="head container-fluid bg-light py-1 px-2" >
+    <!-- desktop view -->
     <div class="row align-items-center text-center d-none d-lg-flex" >
       <div class="col-md-4 d-flex justify-content-start align-items-center">
-        <div class="text-label me-4" style="margin-left: 0.5rem;">Time: <span id="currentTime">--:--:--</span></div>
+        <div class="text-label me-4" style="margin-left: 0.5rem;">Time: <span class="currentTime">--:--:--</span></div>
         <div class="text-label">Date: <span>{{ formatted_date }}</span></div>
       </div>
-      <div class="col-md-4 d-flex justify-content-center align-items-center gap-2">
-        <strong class="main-title" id="timeHoverZone">MainsLott</strong>
+      <div class="timeHoverZone col-md-4 d-flex justify-content-center align-items-center gap-2">
+        <strong class="main-title">MainsLott</strong>
         <button type="button" class="btn btn-outline-primary p-1" onclick="location.reload();" title="Refresh">
           <i class="bi bi-arrow-clockwise" style="font-size: 18px;"></i>
         </button>
       </div>
       <div class="col-md-4 d-flex justify-content-end align-items-center">
         <div class="text-label me-4">Slot: <span>{{ current_slot_time }}</span></div>
-        <div class="text-label" style="margin-right: 0.5rem;">Next Draw: <span id="nextDraw">--:--:--</span></div>
-        <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+        <div class="text-label" style="margin-right: 0.5rem;">Next Draw: <span class="nextDraw">--:--:--</span></div>
+        <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
       </div>
     </div>
+    <!-- mobile view -->
     <div class="d-flex d-lg-none flex-row flex-wrap justify-content-between align-items-center text-center gap-2">
       <div class="d-flex flex-column align-items-start small-block">
-        <div class="text-label-mini">Time: <span id="currentTime">--:--:--</span></div>
+        <div class="text-label-mini">Time: <span class="currentTime">--:--:--</span></div>
         <div class="text-label-mini">Date: <span>{{ formatted_date }}</span></div>
       </div>
-      <div class="d-flex flex-row align-items-center gap-1 small-block" id="timeHoverZone">
-        <strong class="main-title-mini">MainsLott</strong>
+      <div class="d-flex flex-row align-items-center gap-1 small-block">
+        <strong class="timeHoverZone main-title-mini">MainsLott</strong>
         <button type="button" class="btn btn-outline-primary p-1" onclick="location.reload();" title="Refresh">
           <i class="bi bi-arrow-clockwise" style="font-size: 16px;"></i>
         </button>
       </div>
       <div class="d-flex flex-column align-items-start small-block">
         <div class="text-label-mini">Slot: <span>{{ current_slot_time }}</span></div>
-        <div class="text-label-mini">Next Draw: <span id="nextDraw">--:--:--</span></div>
-        <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+        <div class="text-label-mini">Next Draw: <span class="nextDraw">--:--:--</span></div>
+        <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
       </div>
     </div>
-    <section id="timeSelector" style="display: none;">
+    <section id="timeSelector" >
       <form method="post" id="mainForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2">
         {% csrf_token %}
         <!-- Date & Time -->
@@ -250,7 +250,7 @@ td{
     </section>
   </div>
     {% if show_history == "1" or show_history == "2" %}
-    <div class="table-responsive" id="resultArea">
+    <div  id="resultArea">
       <table class="table table-bordered text-center" style="font-weight:bold;border: 1px solid black;">
         <thead>
           <tr>
@@ -301,16 +301,14 @@ td{
     {% elif show_history == "4" %}
       <!-- history results -->
       {% if history_mode == "full" %}
-        <div id="historyTable" class="table-responsive">
+        <div id="historyTable" >
           {% if history_data %}
             {% for slot, rows in history_data %}
-              {% if not forloop.first %}
                 <div class="result-heading d-flex justify-content-between align-items-center px-2" style=" font-weight: bold;">
                   <div>MainsLott</div>
                   <div>{{ slot }}</div>
                   <div>{{ selected_date_display }}</div>
                 </div>
-              {% endif %}
               <table class="table table-bordered text-center" cellspacing="0" border="2" style="border-collapse:collapse; margin:0 auto;border: 1px solid black;">
                 <tbody>
                   {% for row in rows %}
@@ -408,15 +406,14 @@ td{
             </tbody>
           </table>
         {% else %}
+        <!-- single & two historydata -->
         {% for label, grid in history_data %}
-            <h4 style="font-size: 38px; text-align: center; font-weight: bold;">
-              <div class="result-heading d-flex justify-content-between align-items-center px-2" style=" font-weight: bold;">
-                  <div>MainsLott</div>
-                  <div>{{ label }}</div>
-                  <div>{{ selected_date_display }}</div>
-                </div>
-            </h4>
-            <div class="table-responsive">
+            <div class="result-heading d-flex justify-content-between align-items-center px-3" style="font-weight: bold;">
+              <div>MainsLott</div>
+              <div>{{ label }}</div>
+              <div>{{ selected_date_display }}</div>
+            </div>
+            <div>
               <table class="result-cell table table-bordered text-center" style="font-weight:bold;border: 1px solid black;">
                 <thead class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">
                   <tr>
@@ -468,7 +465,7 @@ td{
       {% endif %}
     {% else %}
       <!-- Full table button -->
-      <div id="fullTable" class="table-responsive">
+      <div id="fullTable" >
         <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;margin:0 auto;border: 1px solid black;">
           {% if results_exist %}
             {% for row in grid %}
@@ -510,45 +507,50 @@ td{
     {% endif %}
 </div>
 <footer>
-  <p>&copy; 2025 Mainslott.in</p>
+  <p style="margin-top: 0;margin-bottom: 0rem;">&copy; 2025 Mainslott.in</p>
 </footer>
 <script>
 function updateTimes() {
-    const now = new Date();
-    const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const now = new Date();
+  const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
-    // Format current time
-    let hour = kolkataTime.getHours();
-    const minute = kolkataTime.getMinutes();
-    const second = kolkataTime.getSeconds();
+  // Format current time
+  let hour = kolkataTime.getHours();
+  const minute = kolkataTime.getMinutes();
+  const second = kolkataTime.getSeconds();
 
-    let hour12 = hour % 12;
-    hour12 = hour12 === 0 ? 12 : hour12;
+  let hour12 = hour % 12;
+  hour12 = hour12 === 0 ? 12 : hour12;
 
-    const formattedHour = String(hour12).padStart(2, '0');
-    const formattedMinute = String(minute).padStart(2, '0');
-    const formattedSecond = String(second).padStart(2, '0');
+  const formattedHour = String(hour12).padStart(2, '0');
+  const formattedMinute = String(minute).padStart(2, '0');
+  const formattedSecond = String(second).padStart(2, '0');
+  const formattedTime = `${formattedHour}:${formattedMinute}:${formattedSecond}`;
 
-    const formattedTime = `${formattedHour}:${formattedMinute}:${formattedSecond}`;
-    document.getElementById("currentTime").textContent = formattedTime;
+  // Update all current time fields
+  document.querySelectorAll(".currentTime").forEach(el => {
+    el.textContent = formattedTime;
+  });
 
-    // Countdown to next draw
-    const nextDrawStr = document.getElementById("nextDrawTime").value;
-    const nextDraw = new Date(nextDrawStr);
+  // Update countdown to next draw
+  const nextDrawInput = document.querySelector(".nextDrawTime");
+  if (nextDrawInput) {
+    const nextDraw = new Date(nextDrawInput.value);
     const diff = nextDraw - kolkataTime;
 
     if (diff > 0) {
-        const totalSeconds = Math.floor(diff / 1000);
-        const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-        const seconds = String(totalSeconds % 60).padStart(2, '0');
+      const totalSeconds = Math.floor(diff / 1000);
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
 
-        document.getElementById("nextDraw").textContent = `${hours}:${minutes}:${seconds}`;
+      document.querySelectorAll(".nextDraw").forEach(el => {
+        el.textContent = `${hours}:${minutes}:${seconds}`;
+      });
     } else {
-        // document.getElementById("nextDraw").textContent = "00:00:00";
-        // Optional: reload page after countdown ends
-        location.reload();
+      location.reload();  // Refresh after draw time
     }
+  }
 }
 setInterval(updateTimes, 1000);
 updateTimes();
@@ -653,43 +655,33 @@ function setMode() {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const showHistory = "{{ show_history }}";
-  const historyMode = "{{ history_mode }}";
-
-  const hoverZone = document.getElementById("timeHoverZone");
   const timeSelector = document.getElementById("timeSelector");
+  const isMobile = window.innerWidth <= 768;
 
-  const autoInputs = document.querySelectorAll(".autoSubmit");
-
-  // Auto-submit form when a value changes
-  autoInputs.forEach((element) => {
-    element.addEventListener("change", function () {
-      if (element.id === "timeInput") {
-        setMode();  
-      }
-      timeSelector.style.display = "block";
-      setTimeout(() => {
-        document.getElementById("mainForm").submit();
-      }, 100); 
-    });
-  });
-
-  // Only apply hover show/hide if full history mode
-  // if (showHistory === "4" && historyMode === "full") {
   if (showHistory === "3") {
     timeSelector.style.display = "none";
 
-    hoverZone.addEventListener("mouseenter", () => {
-      timeSelector.style.display = "flex";
-    });
+    const hoverZones = document.querySelectorAll(".timeHoverZone");
 
-    timeSelector.addEventListener("mouseleave", () => {
-      timeSelector.style.display = "none";
+    hoverZones.forEach((zone) => {
+      if (isMobile) {
+        zone.addEventListener("click", () => {
+          timeSelector.style.display =
+            timeSelector.style.display === "block" ? "none" : "block";
+        });
+      } else {
+        zone.addEventListener("mouseenter", () => {
+          timeSelector.style.display = "block";
+        });
+        timeSelector.addEventListener("mouseleave", () => {
+          timeSelector.style.display = "none";
+        });
+      }
     });
   } else {
-    timeSelector.style.display = "flex";
+    timeSelector.style.display = "block";
   }
 });
-
 </script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
