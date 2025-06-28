@@ -13,32 +13,45 @@ from django.utils.timezone import localtime,make_aware
 from collections import defaultdict, namedtuple
 import random
 
-def logout_other_superusers(current_user):
-    """Log out all other superusers except the current one"""
-    for session in Session.objects.all():
-        data = session.get_decoded()
-        user_id = data.get('_auth_user_id')
+def get_user_sessions(user):
+    now = timezone.now()
+    sessions = Session.objects.all()
+    user_sessions = []
 
-        if user_id and str(user_id) != str(current_user.id):
-            try:
-                other_user = User.objects.get(id=user_id)
-                if other_user.is_superuser:
-                    session.delete()  # force logout
-            except User.DoesNotExist:
-                pass
+    for session in sessions:
+        if session.expire_date < now:
+            session.delete()
+            continue
+
+        data = session.get_decoded()
+        if str(data.get('_auth_user_id')) == str(user.id):
+            user_sessions.append(session)
+    
+    return user_sessions
 
 def custom_login(request):
     if request.method == 'POST':
         username = request.POST.get("username")
         password = request.POST.get("password")
+        force_logout = request.POST.get("force_logout")  # Flag for forced logout
         user = authenticate(request, username=username, password=password)
-
         if user is not None:
+            if user.is_superuser:
+                existing_sessions = get_user_sessions(user)
+                if existing_sessions and not force_logout:
+                    # Already logged in elsewhere, show confirmation page
+                    return render(request, 'confirm_force_logout.html', {
+                        'username': username,
+                        'password': password
+                    })
+                # Force logout other sessions if confirmed
+                for session in existing_sessions:
+                    session.delete()
+            # Proceed to login
             login(request, user)
-            return redirect('/adminpanel')  # ✅ Force redirect
+            return redirect('/adminpanel')
         else:
             messages.error(request, "Invalid username or password.")
-
     return render(request, 'login.html')
 
 POSTPONE_OFFSET = timedelta()
