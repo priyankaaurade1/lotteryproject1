@@ -356,7 +356,8 @@ td{
               <div class="row g-2 justify-content-center">
                 {% for i in "0123456789"|make_list %}
                   <div class="col-4 col-sm-3 col-md-2 col-lg-1 d-flex justify-content-center">
-                    <button type="submit" name="chart_prefix" value="{{ i }}0" class="btn btn-warning w-100">
+                    <button type="submit" name="chart_prefix" value="{{ i }}0"
+                            class="btn btn-warning w-100 text-nowrap px-1">
                       {{ i }}0
                     </button>
                   </div>

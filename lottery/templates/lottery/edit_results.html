@@ -31,12 +31,15 @@ button {
     {% endfor %}
   </div>
 {% endif %}
-{% if is_editable and user.is_superuser %}
-  <form method="post" class="mt-2 d-flex gap-2">
+{% if user.is_superuser %}
+  <form method="post" class="d-flex flex-wrap align-items-center gap-2 mt-2">
     {% csrf_token %}
-    <input type="number" name="delay_minutes" placeholder="Delay (min)" class="form-control" style="width: 120px;">
-    <input type="number" name="delay_seconds" placeholder="Delay (sec)" class="form-control" style="width: 120px;">
-    <button type="submit" name="postpone" value="1" class="btn btn-warning">Postpone Draw</button>
+    {% if is_editable %}
+      <input type="number" name="delay_minutes" placeholder="Delay (min)" class="form-control" style="width: 120px;">
+      <input type="number" name="delay_seconds" placeholder="Delay (sec)" class="form-control" style="width: 120px;">
+      <button type="submit" name="postpone" value="1" class="btn btn-warning">Postpone Draw</button>
+    {% endif %}
+    <button type="submit" name="reset_offset" value="1" class="btn btn-danger">Reset All Postpone</button>
   </form>
 {% endif %}
 
@@ -166,7 +169,6 @@ function updateTimes() {
     nextDrawElem.textContent = "00:00:00";
   }
 }
-
 setInterval(updateTimes, 1000);
 updateTimes();
 </script>
@@ -182,7 +184,6 @@ updateTimes();
         }
       });
     }
-
     // Auto-hide success messages after 3 seconds
     const alert = document.querySelector(".alert-success");
     if (alert) {
@@ -190,5 +191,4 @@ updateTimes();
     }
   });
 </script>
-
 {% endblock %}

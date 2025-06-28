@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.utils.timezone import localtime,make_aware
 from collections import defaultdict, namedtuple
 import random
+from .models import DrawOffset
 
 def get_user_sessions(user):
     now = timezone.now()
@@ -54,10 +55,9 @@ def custom_login(request):
             messages.error(request, "Invalid username or password.")
     return render(request, 'login.html')
 
-POSTPONE_OFFSET = timedelta()
 @login_required
 def edit_results(request):
-    global POSTPONE_OFFSET  # shared across views during server run
+    offset = DrawOffset.get_offset()
 
     now = localtime()
     today = now.date()
@@ -65,7 +65,21 @@ def edit_results(request):
     formatted_date = today.strftime('%d-%m-%Y')
     current_time_str = now.strftime('%I:%M %p')
 
-    # Generate time slots
+    # ✅ Handle Reset Offset
+    if request.method == "POST" and request.POST.get("reset_offset") == "1" and request.user.is_superuser:
+        DrawOffset.reset_offset()
+        messages.success(request, "All postpone offsets reset.")
+        offset = DrawOffset.get_offset()
+
+    # ✅ Handle Add Offset (Postpone)
+    if request.method == "POST" and request.POST.get("postpone") == "1" and request.user.is_superuser:
+        delay_min = int(request.POST.get("delay_minutes") or 0)
+        delay_sec = int(request.POST.get("delay_seconds") or 0)
+        DrawOffset.add_offset(delay_min, delay_sec)
+        messages.success(request, f"Draw postponed by {delay_min}m {delay_sec}s.")
+        offset = DrawOffset.get_offset()
+
+    # Generate time slots (static schedule)
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
     time_slots = []
@@ -75,7 +89,7 @@ def edit_results(request):
         time_slots.append((time_str, time_obj))
         start += timedelta(minutes=15)
 
-    # Handle selected date/time
+    # Handle selected date/time from form
     selected_date_str = request.POST.get('date')
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else today
 
@@ -86,10 +100,18 @@ def edit_results(request):
             selected_slot = t
             break
 
-    future_slots = [(label, t) for label, t in time_slots if selected_date > today or (selected_date == today and t > current_time)]
+    # Filter future slots with offset applied
+    now_with_offset = localtime() + offset
+    future_slots = [
+        (label, t) for label, t in time_slots
+        if selected_date > today or (selected_date == today and make_aware(datetime.combine(selected_date, t)) + offset > now_with_offset)
+    ]
+
+    # Auto-select next slot if none chosen
     if not selected_slot and future_slots:
         selected_slot_str, selected_slot = future_slots[0]
 
+    # Nothing to edit if no slot
     if not selected_slot:
         return render(request, 'lottery/edit_results.html', {
             'table': None,
@@ -105,30 +127,24 @@ def edit_results(request):
             'is_editable': False,
         })
 
-    # ✅ Handle postpone logic
-    if request.method == "POST" and request.POST.get("postpone") == "1" and request.user.is_superuser:
-        delay_min = int(request.POST.get("delay_minutes") or 0)
-        delay_sec = int(request.POST.get("delay_seconds") or 0)
-        POSTPONE_OFFSET += timedelta(minutes=delay_min, seconds=delay_sec)
-        messages.success(request, f"Draw postponed by {delay_min}m {delay_sec}s.")
-
-    # Draw edit cutoff (10 seconds before)
-    selected_datetime = make_aware(datetime.combine(selected_date, selected_slot)) + POSTPONE_OFFSET
-    now_with_offset = localtime() + POSTPONE_OFFSET
+    # Determine if slot is editable (cutoff 10 seconds before)
+    selected_datetime = make_aware(datetime.combine(selected_date, selected_slot)) + offset
+    now_with_offset = localtime() + offset
     is_editable = selected_datetime > now_with_offset + timedelta(seconds=10)
 
-    # If draw time is already over, show tomorrow's 9:00 AM
+    # If selected time already over (even with offset), show tomorrow 9 AM
     if selected_datetime <= now:
-        selected_datetime = make_aware(datetime.combine(today + timedelta(days=1), time(9, 0)))
+        selected_datetime = make_aware(datetime.combine(today + timedelta(days=1), time(9, 0))) + offset
 
     next_draw_time_str = selected_datetime.strftime('%Y-%m-%dT%H:%M:%S')
     time_diff = selected_datetime - now
 
-    total_seconds = int(time_diff.total_seconds())
+    total_seconds = max(0, int(time_diff.total_seconds()))
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
 
+    # Load or generate results table
     results = LotteryResult.objects.filter(date=selected_date, time_slot=selected_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
     if results.exists():
@@ -141,9 +157,6 @@ def edit_results(request):
             DummyResult = namedtuple('DummyResult', ['first_two_digits', 'last_two_digits', 'pk', 'is_editable'])
             for i in range(100):
                 table[i // 10][i % 10] = DummyResult(f"{i:02}", f"{random.randint(0, 99):02}", 0, False)
-    if not next_draw_time_str:
-        tomorrow_9am = datetime.combine(today + timedelta(days=1), time(9, 0))
-        next_draw_time_str = tomorrow_9am.strftime('%Y-%m-%dT%H:%M:%S')
 
     return render(request, 'lottery/edit_results.html', {
         'table': table,
@@ -368,7 +381,6 @@ def index(request):
         if selected_date_obj == today:
             all_results = LotteryResult.objects.filter(
                 date=selected_date_obj,
-                time_slot__lte=current_time
             ).order_by('time_slot')
         else:
             all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
