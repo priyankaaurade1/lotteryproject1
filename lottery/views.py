@@ -381,6 +381,7 @@ def index(request):
         if selected_date_obj == today:
             all_results = LotteryResult.objects.filter(
                 date=selected_date_obj,
+                time_slot__lte=current_time
             ).order_by('time_slot')
         else:
             all_results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
@@ -525,4 +526,3 @@ def index(request):
         'selected_time_display': selected_time_display,
         'mode':mode,
     })
-

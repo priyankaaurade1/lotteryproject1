@@ -77,65 +77,92 @@ td{
   }
 </style>
 <style>
-.text-label {
-  font-size: 18px !important;
-  font-weight: 600;
-}
-.main-title {
-  font-size: 30px !important;
-  font-weight: bold;
-}
-@media screen and (max-width: 576px) {
-  .text-label-mini {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-  .main-title-mini {
-    font-size: 18px;
-    font-weight: bold;
-  }
-  .small-block {
-    min-width: 30%;
-    flex-shrink: 1;
-  }
-  .form-label,
-  .form-control,
-  .form-select,
-  .btn-sm {
-    font-size: 12px !important;
-  }
-  .small-field label {
-    font-size: 12px !important;
-  }
-  .btn-sm {
-    padding: 4px 10px !important;
-  }
-  #mainForm {
-    font-size: 13px;
-  }
-}
-@media screen and (min-width: 992px) {
+  /* Base (mobile-first) */
   .text-label {
-    font-size: 30px !important;
     font-weight: 600;
   }
   .main-title {
-    font-size: 50px !important;
+    font-size: 30px !important;
     font-weight: bold;
   }
-  .btn-sm {
-    font-size: 18px !important;
-    padding: 6px 14px !important;
+
+  /* Mobile view ≤576px */
+  @media screen and (max-width: 576px) {
+    .text-label-mini {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .main-title-mini {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .small-block {
+      min-width: 30%;
+      flex-shrink: 1;
+    }
+    .form-label,
+    .form-control,
+    .form-select,
+    .btn-sm {
+      font-size: 12px !important;
+    }
+    .small-field label {
+      font-size: 12px !important;
+    }
+    .btn-sm {
+      padding: 4px 10px !important;
+    }
+    #mainForm {
+      font-size: 13px;
+    }
   }
-  .form-label {
-    font-size: 25px !important;
+
+  /* NEW: Medium desktop (992–1400px) - Make it smaller to fit better */
+  @media screen and (min-width: 992px) and (max-width: 1400px) {
+    .text-label {
+      font-size: 19px !important;
+      font-weight: 600;
+    }
+    .main-title {
+      font-size: 36px !important;
+      font-weight: bold;
+    }
+    .btn-sm {
+      font-size: 16px !important;
+      padding: 5px 12px !important;
+    }
+    .form-label {
+      font-size: 20px !important;
+    }
+    .form-control,
+    .form-select {
+      font-size: 16px !important;
+    }
   }
-  .form-control,
-  .form-select {
-    font-size: 17px !important;
+
+  /* Large desktop ≥1401px - Keep your big style */
+  @media screen and (min-width: 1401px) {
+    .text-label {
+      font-size: 30px !important;
+      font-weight: 600;
+    }
+    .main-title {
+      font-size: 50px !important;
+      font-weight: bold;
+    }
+    .btn-sm {
+      font-size: 18px !important;
+      padding: 6px 14px !important;
+    }
+    .form-label {
+      font-size: 25px !important;
+    }
+    .form-control,
+    .form-select {
+      font-size: 17px !important;
+    }
   }
-}
 </style>
   <style>
   .result-cell {
@@ -165,6 +192,13 @@ td{
     } 
   }
 </style>
+<style>
+  .main-title {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+</style>
+
 </head>
 <body>
 
@@ -175,8 +209,8 @@ td{
   <div class="head container-fluid bg-light py-1 px-2" >
     <!-- desktop view -->
     <div class="row align-items-center text-center d-none d-lg-flex" >
-      <div class="col-md-4 d-flex justify-content-start align-items-center">
-        <div class="text-label me-4" style="margin-left: 0.5rem;">Time: <span class="currentTime">--:--:--</span></div>
+      <div class="col-md-4 d-flex justify-content-start align-items-center" style="font-weight: 600;">
+        <div class="text-label me-4" >Time: <span class="currentTime">--:--:--</span></div>
         <div class="text-label">Date: <span>{{ formatted_date }}</span></div>
       </div>
       <div class="timeHoverZone col-md-4 d-flex justify-content-center align-items-center gap-2">
@@ -185,9 +219,9 @@ td{
           <i class="bi bi-arrow-clockwise" style="font-size: 18px;"></i>
         </button>
       </div>
-      <div class="col-md-4 d-flex justify-content-end align-items-center">
+      <div class="col-md-4 d-flex justify-content-end align-items-center" style="font-weight: 600;">
         <div class="text-label me-4">Slot: <span>{{ current_slot_time }}</span></div>
-        <div class="text-label" style="margin-right: 0.5rem;">Next Draw: <span class="nextDraw">--:--:--</span></div>
+        <div class="text-label" >Next Draw: <span class="nextDraw">--:--:--</span></div>
         <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
       </div>
     </div>
@@ -203,7 +237,7 @@ td{
           <i class="bi bi-arrow-clockwise" style="font-size: 16px;"></i>
         </button>
       </div>
-      <div class="d-flex flex-column align-items-start small-block">
+      <div class="d-flex flex-column align-items-end small-block">
         <div class="text-label-mini">Slot: <span>{{ current_slot_time }}</span></div>
         <div class="text-label-mini">Next Draw: <span class="nextDraw">--:--:--</span></div>
         <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
@@ -356,8 +390,7 @@ td{
               <div class="row g-2 justify-content-center">
                 {% for i in "0123456789"|make_list %}
                   <div class="col-4 col-sm-3 col-md-2 col-lg-1 d-flex justify-content-center">
-                    <button type="submit" name="chart_prefix" value="{{ i }}0"
-                            class="btn btn-warning w-100 text-nowrap px-1">
+                    <button type="submit" name="chart_prefix" value="{{ i }}0" class="btn btn-warning w-100">
                       {{ i }}0
                     </button>
                   </div>
