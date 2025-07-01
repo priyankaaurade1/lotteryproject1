@@ -13,6 +13,7 @@ from django.utils.timezone import localtime,make_aware
 from collections import defaultdict, namedtuple
 import random
 from .models import DrawOffset
+from django.http import JsonResponse
 
 def get_user_sessions(user):
     now = timezone.now()
@@ -58,19 +59,16 @@ def custom_login(request):
 @login_required
 def edit_results(request):
     offset = DrawOffset.get_offset()
-
     now = localtime()
     today = now.date()
     current_time = now.time()
     formatted_date = today.strftime('%d-%m-%Y')
     current_time_str = now.strftime('%I:%M %p')
-
     # ✅ Handle Reset Offset
     if request.method == "POST" and request.POST.get("reset_offset") == "1" and request.user.is_superuser:
         DrawOffset.reset_offset()
         messages.success(request, "All postpone offsets reset.")
         offset = DrawOffset.get_offset()
-
     # ✅ Handle Add Offset (Postpone)
     if request.method == "POST" and request.POST.get("postpone") == "1" and request.user.is_superuser:
         delay_min = int(request.POST.get("delay_minutes") or 0)
@@ -78,7 +76,6 @@ def edit_results(request):
         DrawOffset.add_offset(delay_min, delay_sec)
         messages.success(request, f"Draw postponed by {delay_min}m {delay_sec}s.")
         offset = DrawOffset.get_offset()
-
     # Generate time slots (static schedule)
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
@@ -88,7 +85,6 @@ def edit_results(request):
         time_str = start.strftime("%I:%M %p")
         time_slots.append((time_str, time_obj))
         start += timedelta(minutes=15)
-
     # Handle selected date/time from form
     selected_date_str = request.POST.get('date')
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date() if selected_date_str else today
@@ -99,18 +95,15 @@ def edit_results(request):
         if label == selected_slot_str:
             selected_slot = t
             break
-
     # Filter future slots with offset applied
     now_with_offset = localtime() + offset
     future_slots = [
         (label, t) for label, t in time_slots
         if selected_date > today or (selected_date == today and make_aware(datetime.combine(selected_date, t)) + offset > now_with_offset)
     ]
-
     # Auto-select next slot if none chosen
     if not selected_slot and future_slots:
         selected_slot_str, selected_slot = future_slots[0]
-
     # Nothing to edit if no slot
     if not selected_slot:
         return render(request, 'lottery/edit_results.html', {
@@ -126,24 +119,19 @@ def edit_results(request):
             'all_slots': [label for label, _ in time_slots],
             'is_editable': False,
         })
-
     # Determine if slot is editable (cutoff 10 seconds before)
     selected_datetime = make_aware(datetime.combine(selected_date, selected_slot)) + offset
     now_with_offset = localtime() + offset
     is_editable = selected_datetime > now_with_offset + timedelta(seconds=10)
-
     # If selected time already over (even with offset), show tomorrow 9 AM
     if selected_datetime <= now:
         selected_datetime = make_aware(datetime.combine(today + timedelta(days=1), time(9, 0))) + offset
-
     next_draw_time_str = selected_datetime.strftime('%Y-%m-%dT%H:%M:%S')
     time_diff = selected_datetime - now
-
     total_seconds = max(0, int(time_diff.total_seconds()))
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     next_draw_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-
     # Load or generate results table
     results = LotteryResult.objects.filter(date=selected_date, time_slot=selected_slot)
     table = [[None for _ in range(10)] for _ in range(10)]
@@ -157,7 +145,6 @@ def edit_results(request):
             DummyResult = namedtuple('DummyResult', ['first_two_digits', 'last_two_digits', 'pk', 'is_editable'])
             for i in range(100):
                 table[i // 10][i % 10] = DummyResult(f"{i:02}", f"{random.randint(0, 99):02}", 0, False)
-
     return render(request, 'lottery/edit_results.html', {
         'table': table,
         'time_slot': selected_slot_str,
@@ -283,8 +270,21 @@ def results_history(request):
     })
 
 def get_last_time_slot(now):
-    minutes = (now.minute // 15) * 15
-    return now.replace(minute=minutes, second=0, microsecond=0)
+    from datetime import time
+    earliest_slot = time(9, 0)
+    latest_slot = time(21, 30)
+    current_time = now.time()
+
+    if current_time < earliest_slot:
+        # Before first slot → 9:00 AM
+        return now.replace(hour=9, minute=0, second=0, microsecond=0)
+    elif current_time > latest_slot:
+        # After last slot → 9:30 PM
+        return now.replace(hour=21, minute=30, second=0, microsecond=0)
+    else:
+        # Floor to nearest 15
+        minutes = (now.minute // 15) * 15
+        return now.replace(minute=minutes, second=0, microsecond=0)
 
 def get_next_draw_time(now):
     draw_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
@@ -303,11 +303,26 @@ def get_next_draw_time(now):
         next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
         return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
 
+def next_draw_time_api(request):
+    now = timezone.localtime()
+    next_draw_time = get_next_draw_time(now)
+
+    if next_draw_time:
+        time_diff = next_draw_time - now
+        total_seconds = int(time_diff.total_seconds())
+        return JsonResponse({
+            "next_draw_time_str": next_draw_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "total_seconds": total_seconds
+        })
+    else:
+        return JsonResponse({"next_draw_time_str": "", "total_seconds": 0})
 
 def index(request):
     now = timezone.localtime()
+    slot = get_last_time_slot(now)  # <<< ADDED
+    current_slot_time = slot.time().strftime('%I:%M %p')  # <<< FIXED
+
     today = now.date()
-    current_slot_time = get_last_time_slot(now).time().strftime('%I:%M %p')
     time_slots = []
     start = datetime.combine(today, time(9, 0))
     end = datetime.combine(today, time(21, 30))
@@ -318,6 +333,7 @@ def index(request):
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
     show_history = request.POST.get("show_history")
+    selected_time_obj = None
 
     if request.method == "POST":
         show_history = request.POST.get("show_history") or "3"
@@ -327,7 +343,8 @@ def index(request):
         show_history = "3"
         history_mode = ""
         mode = "full"
-        
+
+    # <<< ADDED: Default selected_time to current slot if needed
     if selected_date:
         try:
             selected_date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
@@ -337,18 +354,17 @@ def index(request):
         selected_date_obj = today
         selected_date = today.strftime("%Y-%m-%d")
 
-    selected_time_obj = None  
-    if show_history == "1":
-        selected_time = None  
-        selected_time_obj = None
-    elif selected_time:
+    if selected_time:
         try:
-            selected_time_obj = datetime.strptime(selected_time, "%H:%M").time()
+            selected_time_obj = datetime.strptime(selected_time, "%I:%M %p").time()
         except ValueError:
             selected_time_obj = None
-    elif selected_date_obj == today:
-        selected_time_obj = get_last_time_slot(now).time()
-        selected_time = selected_time_obj.strftime('%I:%M %p')
+    else:
+        if selected_date_obj == today:
+            slot = get_last_time_slot(now)
+            if slot:
+                selected_time_obj = slot.time()
+                selected_time = selected_time_obj.strftime('%I:%M %p')
 
     results_exist = False
     current_slot_label = ""

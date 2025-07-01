@@ -254,7 +254,7 @@ td{
         <div class="d-flex flex-row align-items-center gap-1 small-field">
           <label class="form-label mb-0" for="timeInput"><strong>Select Time:</strong></label>
           <select name="time" id="timeInput" class="autoSubmit form-select form-select-sm" onchange="setMode()" style="font-weight: bold; width: auto;">
-            <option {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
+            <option value="" {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
             {% for slot in time_slots %}
               <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
             {% endfor %}
@@ -532,7 +532,7 @@ td{
             {% endfor %}
             {% else %}
             <tr>
-              <td colspan="10" style="font-size: 30px; font-weight: bold; padding: 30px;">
+              <td colspan="10" style="font-size: larger; font-weight: bold; padding: 30px;">
                 No Record Found...!
               </td>
             </tr>
@@ -748,19 +748,52 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const dropdown = document.getElementById("timeInput");
-    const currentSlot = document.getElementById("currentSlotTime")?.value;
+let nextDrawTimeStr = document.querySelector(".nextDrawTime").value;
 
-    if (!dropdown || !currentSlot) return;
+function showBlackScreen() {
+  const overlay = document.createElement('div');
+  overlay.style.position = "fixed";
+  overlay.style.top = 0;
+  overlay.style.left = 0;
+  overlay.style.width = "100vw";
+  overlay.style.height = "100vh";
+  overlay.style.backgroundColor = "black";
+  overlay.style.opacity = "1";
+  overlay.style.zIndex = "9999";
+  document.body.appendChild(overlay);
 
-    for (let option of dropdown.options) {
-      if (option.value.trim() === currentSlot.trim()) {
-        option.selected = true;
-        break;
-      }
+  setTimeout(() => {
+    overlay.style.transition = "opacity 1s";
+    overlay.style.opacity = "0";
+    setTimeout(() => overlay.remove(), 1000);
+  }, 2000);
+}
+
+function updateCountdown(newSeconds) {
+  const countdown = document.querySelector(".nextDraw");
+  if (countdown) {
+    let minutes = Math.floor(newSeconds / 60);
+    let seconds = newSeconds % 60;
+    countdown.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+}
+
+async function pollNextDrawTime() {
+  try {
+    const response = await fetch("{% url 'next_draw_time_api' %}");
+    const data = await response.json();
+    if (data.next_draw_time_str && data.next_draw_time_str !== nextDrawTimeStr) {
+      showBlackScreen();
+      nextDrawTimeStr = data.next_draw_time_str;
+      document.querySelector(".nextDrawTime").value = nextDrawTimeStr;
+      updateCountdown(data.total_seconds);
     }
-  });
+  } catch (error) {
+    console.error("Polling error:", error);
+  }
+}
+
+setInterval(pollNextDrawTime, 5000);
 </script>
 </body>
 </html>

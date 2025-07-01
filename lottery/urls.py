@@ -12,5 +12,6 @@ urlpatterns = [
     path('adminpanel/edit/', views.edit_results, name='edit_results'),
     path('adminpanel', views.results_history, name='results_history'),
     path('adminpanel/update/', views.update_all_results, name='update_all_results'),
+    path('api/next_draw_time/', views.next_draw_time_api, name='next_draw_time_api')
 
 ]

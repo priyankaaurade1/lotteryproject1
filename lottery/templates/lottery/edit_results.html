@@ -11,7 +11,6 @@ td {
   padding: 4px;
   vertical-align: middle !important;
 }
-
 button {
   padding: 2px 6px;
   font-size: 12px;
@@ -38,8 +37,8 @@ button {
       <input type="number" name="delay_minutes" placeholder="Delay (min)" class="form-control" style="width: 120px;">
       <input type="number" name="delay_seconds" placeholder="Delay (sec)" class="form-control" style="width: 120px;">
       <button type="submit" name="postpone" value="1" class="btn btn-warning">Postpone Draw</button>
+      <button type="submit" name="reset_offset" value="1" class="btn btn-danger">Reset All Postpone</button>
     {% endif %}
-    <button type="submit" name="reset_offset" value="1" class="btn btn-danger">Reset All Postpone</button>
   </form>
 {% endif %}
 
