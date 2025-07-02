@@ -67,18 +67,25 @@ def edit_results(request):
     # ✅ Handle Reset Offset
     if request.method == "POST" and request.POST.get("reset_offset") == "1" and request.user.is_superuser:
         DrawOffset.reset_offset()
-        messages.success(request, "All postpone offsets reset.")
-        offset = DrawOffset.get_offset()
+        instance = DrawOffset.objects.get(pk=1)
+        instance.scheduled_draw_time = None
+        instance.save()
     # ✅ Handle Add Offset (Postpone)
     if request.method == "POST" and request.POST.get("postpone") == "1" and request.user.is_superuser:
         delay_min = int(request.POST.get("delay_minutes") or 0)
         delay_sec = int(request.POST.get("delay_seconds") or 0)
-        DrawOffset.add_offset(delay_min, delay_sec)
-        messages.success(request, f"Draw postponed by {delay_min}m {delay_sec}s.")
-        offset = DrawOffset.get_offset()
+        offset_delta = timedelta(minutes=delay_min, seconds=delay_sec)
+        # Get current scheduled time (if any)
+        scheduled = DrawOffset.get_scheduled_draw()
+        if not scheduled or scheduled < now:
+            scheduled = get_next_draw_time(now)
+        new_scheduled = scheduled + offset_delta
+        DrawOffset.set_scheduled_draw(new_scheduled)
+        messages.success(request, f"Draw postponed to {new_scheduled.strftime('%I:%M %p')}.")
     # Generate time slots (static schedule)
-    start = datetime.combine(today, time(9, 0))
-    end = datetime.combine(today, time(21, 30))
+    offset = DrawOffset.get_offset()
+    start = datetime.combine(today, time(9, 0)) + offset
+    end = datetime.combine(today, time(21, 30)) + offset
     time_slots = []
     while start <= end:
         time_obj = start.time()
@@ -118,6 +125,7 @@ def edit_results(request):
             'selected_slot': None,
             'all_slots': [label for label, _ in time_slots],
             'is_editable': False,
+            'total_seconds': total_seconds,
         })
     # Determine if slot is editable (cutoff 10 seconds before)
     selected_datetime = make_aware(datetime.combine(selected_date, selected_slot)) + offset
@@ -156,6 +164,7 @@ def edit_results(request):
         'selected_slot': selected_slot_str,
         'all_slots': [label for label, _ in time_slots],
         'is_editable': is_editable,
+        'total_seconds': total_seconds,
     })
 
 @login_required
@@ -189,7 +198,7 @@ def update_all_results(request):
 def results_history(request):
     now = localtime()
     today = now.date()
-
+    next_draw_time_str = ""
     # --- Get selected date and time from POST
     selected_date = request.POST.get("date") or today.strftime('%Y-%m-%d')
     try:
@@ -215,6 +224,13 @@ def results_history(request):
         time_slots.append(slot_str)
         slot_labels.append((slot_str, start.time()))
         start += timedelta(minutes=15)
+
+    if selected_date_obj == today:
+        for label, time_obj in slot_labels:
+            slot_dt = datetime.combine(today, time_obj)
+            if make_aware(slot_dt) > now:
+                next_draw_time_str = slot_dt.strftime('%Y-%m-%dT%H:%M:%S')
+                break
 
     # --- Filter results
     if selected_time_obj:
@@ -267,6 +283,7 @@ def results_history(request):
         'selected_time': selected_time,
         'time_slots': time_slots,
         'no_results': no_results,
+        'next_draw_time_str': next_draw_time_str,
     })
 
 def get_last_time_slot(now):
@@ -287,35 +304,53 @@ def get_last_time_slot(now):
         return now.replace(minute=minutes, second=0, microsecond=0)
 
 def get_next_draw_time(now):
-    draw_start = now.replace(hour=9, minute=0, second=0, microsecond=0)
-    draw_end = now.replace(hour=21, minute=30, second=0, microsecond=0)
+    offset = DrawOffset.get_offset()
+    now_with_offset = now + offset
 
-    if now < draw_start:
-        # Before 9:00 AM → next draw is today at 9:00 AM
-        return draw_start
-    elif now > draw_end:
-        # After 9:30 PM → next draw is tomorrow at 9:00 AM
-        next_day = now + timedelta(days=1)
-        return next_day.replace(hour=9, minute=0, second=0, microsecond=0)
-    else:
-        # During draw period → next slot rounded to next 15-minute interval
-        minutes = (now.minute // 15 + 1) * 15
-        next_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
-        return next_time if next_time <= draw_end else (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+    draw_start = now_with_offset.replace(hour=9, minute=0, second=0, microsecond=0)
+    draw_end = now_with_offset.replace(hour=21, minute=30, second=0, microsecond=0)
 
+    if now_with_offset < draw_start:
+        # Before 9:00 AM → first draw
+        return draw_start - offset
+
+    if now_with_offset > draw_end:
+        # After last slot → tomorrow 9:00
+        next_day = now_with_offset + timedelta(days=1)
+        return next_day.replace(hour=9, minute=0, second=0, microsecond=0) - offset
+
+    # Otherwise → round UP to next 15 min slot
+    minutes = (now_with_offset.minute // 15 + 1) * 15
+    next_time = now_with_offset.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minutes)
+
+    if next_time > draw_end:
+        # Past last slot today → tomorrow 9:00
+        next_time = (now_with_offset + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+
+    return next_time - offset
+
+@login_required
 def next_draw_time_api(request):
     now = timezone.localtime()
-    next_draw_time = get_next_draw_time(now)
+    offset = DrawOffset.get_offset()
 
-    if next_draw_time:
-        time_diff = next_draw_time - now
-        total_seconds = int(time_diff.total_seconds())
+    next_draw_time = get_next_draw_time(now)
+    if not next_draw_time:
         return JsonResponse({
-            "next_draw_time_str": next_draw_time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "total_seconds": total_seconds
+            'next_draw_time_str': '',
+            'total_seconds': 0,
         })
-    else:
-        return JsonResponse({"next_draw_time_str": "", "total_seconds": 0})
+
+    # Compute remaining seconds from now
+    total_seconds = max(0, int((next_draw_time + offset - now).total_seconds()))
+
+    print("OFFSET:", offset)
+    print("NEXT DRAW:", next_draw_time)
+
+    return JsonResponse({
+        'next_draw_time_str': next_draw_time.strftime("%Y-%m-%dT%H:%M:%S"),
+        'total_seconds': total_seconds,
+    })
 
 def index(request):
     now = timezone.localtime()

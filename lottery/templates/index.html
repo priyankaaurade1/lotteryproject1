@@ -761,7 +761,6 @@ function showBlackScreen() {
   overlay.style.opacity = "1";
   overlay.style.zIndex = "9999";
   document.body.appendChild(overlay);
-
   setTimeout(() => {
     overlay.style.transition = "opacity 1s";
     overlay.style.opacity = "0";
@@ -782,10 +781,17 @@ async function pollNextDrawTime() {
   try {
     const response = await fetch("{% url 'next_draw_time_api' %}");
     const data = await response.json();
-    if (data.next_draw_time_str && data.next_draw_time_str !== nextDrawTimeStr) {
-      showBlackScreen();
-      nextDrawTimeStr = data.next_draw_time_str;
-      document.querySelector(".nextDrawTime").value = nextDrawTimeStr;
+
+    if (data.next_draw_time_str) {
+      if (data.next_draw_time_str !== nextDrawTimeStr) {
+        // It changed → show black screen and reload ONCE
+        showBlackScreen();
+        setTimeout(() => location.reload(), 2000);
+        // STOP here! Don't update local variable (so after reload it's correct)
+        return;
+      }
+
+      // Only update countdown if no change
       updateCountdown(data.total_seconds);
     }
   } catch (error) {
@@ -795,6 +801,7 @@ async function pollNextDrawTime() {
 
 setInterval(pollNextDrawTime, 5000);
 </script>
+
 </body>
 </html>
 

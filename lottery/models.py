@@ -4,26 +4,36 @@ from datetime import timedelta
 
 class DrawOffset(models.Model):
     offset_seconds = models.IntegerField(default=0)
-
-    def __str__(self):
-        return f"Offset: {self.offset_seconds} seconds"
+    scheduled_draw_time = models.DateTimeField(null=True, blank=True)
 
     @classmethod
     def get_offset(cls):
-        obj, created = cls.objects.get_or_create(id=1)
-        return timedelta(seconds=obj.offset_seconds)
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return timedelta(seconds=instance.offset_seconds)
 
     @classmethod
-    def add_offset(cls, minutes=0, seconds=0):
-        obj, _ = cls.objects.get_or_create(id=1)
-        obj.offset_seconds += (minutes * 60) + seconds
-        obj.save()
+    def add_offset(cls, minutes, seconds):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        instance.offset_seconds += minutes * 60 + seconds
+        instance.save()
 
     @classmethod
     def reset_offset(cls):
-        obj, _ = cls.objects.get_or_create(id=1)
-        obj.offset_seconds = 0
-        obj.save()
+        instance, _ = cls.objects.get_or_create(pk=1)
+        instance.offset_seconds = 0
+        instance.scheduled_draw_time = None
+        instance.save()
+
+    @classmethod
+    def set_scheduled_draw(cls, dt):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        instance.scheduled_draw_time = dt
+        instance.save()
+
+    @classmethod
+    def get_scheduled_draw(cls):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance.scheduled_draw_time
 
 class LotteryResult(models.Model):
     date = models.DateField(auto_now_add=True)
