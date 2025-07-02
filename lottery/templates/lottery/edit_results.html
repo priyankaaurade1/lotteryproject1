@@ -156,6 +156,7 @@ function updateTimes() {
     tomorrow9am.setDate(tomorrow9am.getDate() + 1);
     tomorrow9am.setHours(9, 0, 0, 0);
     diff = tomorrow9am - kolkataTime;
+    location.reload();
   }
 
   if (diff > 0) {
