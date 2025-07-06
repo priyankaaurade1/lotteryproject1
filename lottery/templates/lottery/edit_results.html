@@ -21,6 +21,15 @@ button {
     padding: 0.25rem 0.4rem !important; 
 }
 </style>
+<style>
+  @media (max-width: 576px) {
+  #autoSubmitForm label,
+  #autoSubmitForm input,
+  #autoSubmitForm select {
+    font-size: 0.9rem !important;
+  }
+}
+</style>
 {% if messages %}
   <div class="container">
     {% for message in messages %}
@@ -42,38 +51,47 @@ button {
   </form>
 {% endif %} -->
 
-<div class="d-flex justify-content-between align-items-center px-3 py-2" style="font-size: 28px; font-weight: 600; background-color: #f1f1f1; border-radius: 8px; flex-wrap: wrap;">
-  <div class="me-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 px-3 py-2"
+     style="font-size: 1.2rem; font-weight: 600; background-color: #f1f1f1; border-radius: 8px;">
+  
+  <!-- Time Display -->
+  <div class="flex-grow-1" style="min-width: 120px;">
     Time: <span id="currentTime">--:--:--</span>
   </div>
-  <form method="POST" id="autoSubmitForm" class="d-flex align-items-center gap-3 mb-0 mx-2">
-  {% csrf_token %}
-  <div class="d-flex align-items-center gap-1">
-    <label class="mb-0" style="white-space: nowrap;">Select Date:</label>
-    <input type="date" name="date" value="{{ selected_date|default:'' }}"
-           class="form-control form-control-sm" style="font-size: 1.2rem;"
-           onchange="document.getElementById('autoSubmitForm').submit()">
-  </div>
 
-  <div class="d-flex align-items-center gap-1">
-    <label class="mb-0" style="white-space: nowrap;">Draw Time:</label>
-    <select name="time_slot" class="form-control form-control-sm" style="font-size: 1.2rem;"
-            onchange="document.getElementById('autoSubmitForm').submit()">
-      {% for slot in all_slots %}
-        {% if selected_date != today or slot > current_time %}
-          <option value="{{ slot }}" {% if slot == selected_slot %}selected{% endif %}>
-            {{ slot }}
-          </option>
-        {% endif %}
-      {% endfor %}
-    </select>
+  <!-- Date & Time Form -->
+  <form method="POST" id="autoSubmitForm" class="d-flex flex-wrap align-items-center gap-2 mb-0">
+    {% csrf_token %}
+    
+    <!-- Date -->
+    <div class="d-flex align-items-center gap-1" style="min-width: 160px;">
+      <label class="mb-0" style="white-space: nowrap;">Date:</label>
+      <input type="date" name="date" value="{{ selected_date|default:'' }}"
+             class="form-control form-control-sm" style="font-size: 1rem; max-width: 140px;"
+             onchange="document.getElementById('autoSubmitForm').submit()">
+    </div>
+
+    <!-- Time -->
+    <div class="d-flex align-items-center gap-1" style="min-width: 180px;">
+      <label class="mb-0" style="white-space: nowrap;">Draw Time:</label>
+      <select name="time_slot" class="form-control form-control-sm" style="font-size: 1rem; max-width: 140px;"
+              onchange="document.getElementById('autoSubmitForm').submit()">
+        {% for slot in all_slots %}
+          {% if selected_date != today or slot > current_time %}
+            <option value="{{ slot }}" {% if slot == selected_slot %}selected{% endif %}>{{ slot }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <!-- Countdown -->
+  <div class="flex-grow-1 text-end" style="min-width: 140px;">
+    <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
+    Left Time: <span id="nextDraw">--:--:--</span>
   </div>
-</form>
-<div class="ms-3">
-  <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
-  Left Time: <span id="nextDraw">--:--:--</span>
 </div>
-</div>
+
 <form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}
 
@@ -120,7 +138,7 @@ button {
 
   <div class="text-center mt-3">
     {% if is_editable %}
-      <button type="submit" class="btn btn-primary">Update</button>
+      <button type="submit" class="btn btn-primary" style="background: #1e1e2f;color: white;">Update</button>
     {% else %}
       <button type="button" class="btn btn-secondary" disabled>Cannot Edit Past Results</button>
     {% endif %}
