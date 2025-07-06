@@ -56,10 +56,7 @@ footer {
     margin: 0px auto;
     background-color: #FFA7DC;
     background-image: linear-gradient(to bottom right, #c494d8);
-    padding-left: 4%;
-    padding-right: 4%;
-    padding-bottom: 20px;
-    font-family: "Times new Roman" !important;
+    padding-bottom: 5px;
 }
 td{
     text-align: -webkit-center;
@@ -85,6 +82,37 @@ td{
     font-size: 30px !important;
     font-weight: bold;
   }
+
+  @media screen and (max-width: 358px) {
+    .smaller-mobile {
+      gap: 0rem !important;
+    }
+  }
+
+  @media (max-width: 336px) {
+  .smaller-mobile {
+    gap: 0 !important;
+    justify-content: space-around !important;
+    padding: 0 2px !important;
+  }
+
+  .smaller-mobile .text-label-mini {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+  .smaller-mobile .main-title-mini {
+    font-size: 12px !important;
+  }
+
+  .smaller-mobile .btn-outline-primary {
+    padding: 2px 5px !important;
+  }
+
+  .small-block {
+    min-width: 32% !important;
+  }
+}
 
   /* Mobile view ≤576px */
   @media screen and (max-width: 576px) {
@@ -197,8 +225,12 @@ td{
     margin: 0 !important;
     padding: 0 !important;
   }
-</style>
+  .timeHoverZone {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
 
+</style>
 </head>
 <body>
 
@@ -206,39 +238,39 @@ td{
   <marquee behavior="" direction="" style="font-size: larger;">
       Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
   </marquee>
-  <div class="head container-fluid bg-light py-1 px-2" >
+  <div class="head container-fluid bg-light " >
     <!-- desktop view -->
-    <div class="row align-items-center text-center d-none d-lg-flex" >
-      <div class="col-md-4 d-flex justify-content-start align-items-center" style="font-weight: 600;">
-        <div class="text-label me-4" >Time: <span class="currentTime">--:--:--</span></div>
+    <div class="row align-items-center text-center d-none d-lg-flex">
+      <div class="col-md-5 d-flex justify-content-start align-items-center" style="font-weight: 600;">
+        <div class="text-label me-4">Time: <span class="currentTime">--:--:--</span></div>
         <div class="text-label">Date: <span>{{ formatted_date }}</span></div>
       </div>
-      <div class="timeHoverZone col-md-4 d-flex justify-content-center align-items-center gap-2">
+      <div class="timeHoverZone col-md-2 d-flex justify-content-center align-items-center px-0">
         <strong class="main-title">MainsLott</strong>
-        <button type="button" class="btn btn-outline-primary p-1" onclick="location.reload();" title="Refresh">
+        <button type="button" class="btn btn-outline-primary p-1" onclick="window.location.href = window.location.href;" title="Refresh">
           <i class="bi bi-arrow-clockwise" style="font-size: 18px;"></i>
         </button>
       </div>
-      <div class="col-md-4 d-flex justify-content-end align-items-center" style="font-weight: 600;">
-        <div class="text-label me-4">Slot: <span>{{ current_slot_time }}</span></div>
-        <div class="text-label" >Next Draw: <span class="nextDraw">--:--:--</span></div>
+      <div class="col-md-5 d-flex justify-content-end align-items-center" style="font-weight: 600;">
+        <div class="text-label me-4">Draw Time: <span>{{ selected_time }}</span></div>
+        <div class="text-label">Next Draw: <span class="nextDraw">--:--:--</span></div>
         <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
       </div>
     </div>
     <!-- mobile view -->
     <div class="d-flex d-lg-none flex-row flex-wrap justify-content-between align-items-center text-center gap-2">
-      <div class="d-flex flex-column align-items-start small-block">
+      <div class="d-flex flex-column align-items-start small-block" style="font-weight: 600;">
         <div class="text-label-mini">Time: <span class="currentTime">--:--:--</span></div>
         <div class="text-label-mini">Date: <span>{{ formatted_date }}</span></div>
       </div>
-      <div class="d-flex flex-row align-items-center gap-1 small-block">
+      <div class="d-flex flex-row align-items-center gap-1 small-block" style="font-weight: 600;">
         <strong class="timeHoverZone main-title-mini">MainsLott</strong>
-        <button type="button" class="btn btn-outline-primary p-1" onclick="location.reload();" title="Refresh">
+        <button type="button" class="btn btn-outline-primary p-1" onclick="window.location.href = window.location.href;" title="Refresh">
           <i class="bi bi-arrow-clockwise" style="font-size: 16px;"></i>
         </button>
       </div>
-      <div class="d-flex flex-column align-items-end small-block">
-        <div class="text-label-mini">Slot: <span>{{ current_slot_time }}</span></div>
+      <div class="d-flex flex-column align-items-end small-block" style="font-weight: 600;">
+        <div class="text-label-mini">Draw Time: <span>{{ selected_time }}</span></div>
         <div class="text-label-mini">Next Draw: <span class="nextDraw">--:--:--</span></div>
         <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
       </div>
@@ -260,7 +292,7 @@ td{
             {% endfor %}
           </select>
         </div>
-        <input type="hidden" id="currentSlotTime" value="{{ current_slot_time }}">
+        <input type="hidden" id="currentSlotTime" value="{{ selected_time }}">
         <!-- Buttons -->
         <button type="button" class="btn btn-success btn-sm" id="btnSingle">SINGLE</button>
         <button type="button" class="btn btn-success btn-sm" id="btnTwo">TWO</button>
@@ -777,31 +809,30 @@ function updateCountdown(newSeconds) {
   }
 }
 
-async function pollNextDrawTime() {
-  try {
-    const response = await fetch("{% url 'next_draw_time_api' %}");
-    const data = await response.json();
+//async function pollNextDrawTime() {
+  //try {
+    //const response = await fetch("{% url 'next_draw_time_api' %}");
+    //const data = await response.json();
 
-    if (data.next_draw_time_str) {
-      if (data.next_draw_time_str !== nextDrawTimeStr) {
+    //if (data.next_draw_time_str) {
+      //if (data.next_draw_time_str !== nextDrawTimeStr) {
         // It changed → show black screen and reload ONCE
-        showBlackScreen();
-        setTimeout(() => location.reload(), 2000);
+        //showBlackScreen();
+        //setTimeout(() => location.reload(), 2000);
         // STOP here! Don't update local variable (so after reload it's correct)
-        return;
-      }
+        //return;
+      //}
 
       // Only update countdown if no change
-      updateCountdown(data.total_seconds);
-    }
-  } catch (error) {
-    console.error("Polling error:", error);
-  }
-}
+     // updateCountdown(data.total_seconds);
+    //}
+  //} catch (error) {
+   // console.error("Polling error:", error);
+  //}
+//}
 
 setInterval(pollNextDrawTime, 5000);
 </script>
 
 </body>
 </html>
-
