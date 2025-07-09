@@ -1,12 +1,10 @@
 {% load static %}
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mainslott Replica</title>
+  <title>Mainslott</title>
   <!-- <link rel="stylesheet" href="{% static 'style.css' %}"> -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -28,35 +26,48 @@
     padding-right: 0 !important;
   }
 </style>
-  <style>  
-  header {
-    background-color: #f2f2f2;
-    text-align: center;
-  }
+<style>
+.top-marquee {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1050;
+  background: white;
+  padding: 5px 10px;
+  font-size: larger;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.main-header {
+  position: fixed;
+  top: 35px;
+  left: 0;
+  width: 100%;
+  z-index: 1040;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+   display: flex;
+  flex-direction: column;
+}
+</style>
+<style>  
+header {
+  background-color: #f2f2f2;
+  text-align: center;
+  position: fixed;
+}
 html, body {
   height: 100%;
   width: 100%;
+  max-width: 100vw;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-.wrapper {
-  flex: 1;
-}
-footer {
-  width: 100%;
-  background-color: #f2f2f2;
-  text-align: center;
-  padding: 8px 0;
-  font-weight: bold;
 }
 .head {
     text-align: center;
     margin: 0px auto;
     background-color: #FFA7DC;
     background-image: linear-gradient(to bottom right, #c494d8);
-    padding-bottom: 5px;
 }
 td{
     text-align: -webkit-center;
@@ -67,11 +78,32 @@ td{
 .table>:not(caption)>*>* {
     padding: 0.05rem 0.4rem !important; 
 }
-</style>
-<style>
-  #timeSelector {
-    transition: all 0.3s ease;
-  }
+.timeSelector {
+  display: none;
+  background-color: #FFA7DC;
+  background-image: linear-gradient(to bottom right, #c494d8);
+}
+
+.timeSelector.show {
+  display: block;
+}
+
+#fullHistoryContent {
+  transition: padding-top 0.3s ease;
+}
+.dropdown-menu {
+      z-index: 9999 !important;
+      position: absolute;
+    }
+.page-content.default-padding {
+  padding-top: 145px;  
+}
+.page-content.collapsed-padding {
+  padding-top: 111px;  
+}
+.page-content.expanded-padding {
+  padding-top: 145px;
+}
 </style>
 <style>
   /* Base (mobile-first) */
@@ -82,10 +114,23 @@ td{
     font-size: 30px !important;
     font-weight: bold;
   }
-
+  .custom-padded-row{
+      padding-left: 10px;
+      padding-right: 10px;
+    }
   @media screen and (max-width: 358px) {
     .smaller-mobile {
       gap: 0rem !important;
+    }
+    .custom-padded-row{
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .selectdate{
+      width: 88px;
+    }
+    .nextdraw{
+      margin-right: 31px;
     }
   }
 
@@ -104,22 +149,32 @@ td{
   .smaller-mobile .main-title-mini {
     font-size: 12px !important;
   }
-
   .smaller-mobile .btn-outline-primary {
     padding: 2px 5px !important;
   }
-
   .small-block {
     min-width: 32% !important;
   }
+  .custom-padded-row{
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .selectdate{
+      width: 88px;
+    }
+  .nextdraw{
+  margin-right: 31px;
 }
-
+}
   /* Mobile view ≤576px */
   @media screen and (max-width: 576px) {
     .text-label-mini {
       font-size: 13px;
       font-weight: 600;
       line-height: 1.2;
+    }
+    .nextdraw1{
+      margin-right: 25px;
     }
     .main-title-mini {
       font-size: 18px;
@@ -144,9 +199,15 @@ td{
     #mainForm {
       font-size: 13px;
     }
+    .custom-padded-row{
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .selectdate{
+      width: 88px;
+    }
   }
-
-  /* NEW: Medium desktop (992–1400px) - Make it smaller to fit better */
+  /* Medium desktop (992–1400px) - Make it smaller to fit better */
   @media screen and (min-width: 992px) and (max-width: 1400px) {
     .text-label {
       font-size: 19px !important;
@@ -167,8 +228,17 @@ td{
     .form-select {
       font-size: 16px !important;
     }
+    .custom-padded-row{
+      padding-left: 10px;
+      padding-right: 8px;
+    }
+    .selectdate{
+      width: 111px;
+    }
+    .refreshbtn{
+      margin-left: 33px;
+    }
   }
-
   /* Large desktop ≥1401px - Keep your big style */
   @media screen and (min-width: 1401px) {
     .text-label {
@@ -181,7 +251,7 @@ td{
     }
     .btn-sm {
       font-size: 18px !important;
-      padding: 6px 14px !important;
+      padding: 0px 7px !important;
     }
     .form-label {
       font-size: 25px !important;
@@ -190,13 +260,31 @@ td{
     .form-select {
       font-size: 17px !important;
     }
+    .custom-padded-row{
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .selectdate{
+      width: 111px;
+    }
+    .refreshbtn{
+      margin-left: 62px;
+    }
   }
 </style>
   <style>
-  .result-cell {
-    font-size: 10px;
+  /* .result-cell {
+    font-size: 22px;
     font-weight: bold;
-    padding: 4px;
+    padding: 0px;
+  }
+  .result-heading{
+    font-size: 20px;
+  }  */
+  .result-cell {
+    font-size: 22px;
+    font-weight: bold;
+    padding: 0px;
   }
   .result-heading{
     font-size: 20px;
@@ -229,63 +317,110 @@ td{
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
+select.no-arrow {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none !important;
+  padding-right: 0;  
+}
+</style>
+<style>
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+  .main-header,
+  .timeSelector {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+  }
 
+  .timeSelector {
+    display: none;
+    background: #FFA7DC;
+    background-image: linear-gradient(to bottom right, #c494d8);
+    padding: 12px;
+  }
+
+  .timeSelector.show {
+    display: block;
+  }
+
+  .table {
+    width: 100% !important;
+    font-size: 14px !important;
+  }
+
+  .timeHoverZone {
+    cursor: pointer;
+  }
+
+  .custom-padded-row {
+    flex-wrap: wrap;
+  }
+}
 </style>
 </head>
 <body>
-
 <div class="container-fluid">
-  <marquee behavior="" direction="" style="font-size: larger;">
+  <marquee class="top-marquee" behavior="" direction="" style="font-size: larger;">
       Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
   </marquee>
-  <div class="head container-fluid bg-light " >
+  <div class="head container-fluid bg-light main-header" id="headerWrapper">
     <!-- desktop view -->
-    <div class="row align-items-center text-center d-none d-lg-flex">
+    <div id="fullHistoryWrapper" class="row align-items-center text-center d-none d-lg-flex custom-padded-row">
       <div class="col-md-5 d-flex justify-content-start align-items-center" style="font-weight: 600;">
         <div class="text-label me-4">Time: <span class="currentTime">--:--:--</span></div>
         <div class="text-label">Date: <span>{{ formatted_date }}</span></div>
+        <button type="button" class="btn refreshbtn" title="Refresh" onclick="window.location.href = window.location.href;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+          </svg>
+        </button>
       </div>
       <div class="timeHoverZone col-md-2 d-flex justify-content-center align-items-center px-0">
         <strong class="main-title">MainsLott</strong>
-        <button type="button" class="btn btn-outline-primary p-1" onclick="window.location.href = window.location.href;" title="Refresh">
-          <i class="bi bi-arrow-clockwise" style="font-size: 18px;"></i>
-        </button>
       </div>
       <div class="col-md-5 d-flex justify-content-end align-items-center" style="font-weight: 600;">
-        <div class="text-label me-4">Draw Time: <span>{{ selected_time }}</span></div>
+        <div class="text-label me-4">Draw Time:<span>{{ selected_time_display }}</span></div>
         <div class="text-label">Next Draw: <span class="nextDraw">--:--:--</span></div>
         <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
       </div>
     </div>
     <!-- mobile view -->
-    <div class="d-flex d-lg-none flex-row flex-wrap justify-content-between align-items-center text-center gap-2">
-      <div class="d-flex flex-column align-items-start small-block" style="font-weight: 600;">
-        <div class="text-label-mini">Time: <span class="currentTime">--:--:--</span></div>
-        <div class="text-label-mini">Date: <span>{{ formatted_date }}</span></div>
-      </div>
-      <div class="d-flex flex-row align-items-center gap-1 small-block" style="font-weight: 600;">
-        <strong class="timeHoverZone main-title-mini">MainsLott</strong>
-        <button type="button" class="btn btn-outline-primary p-1" onclick="window.location.href = window.location.href;" title="Refresh">
-          <i class="bi bi-arrow-clockwise" style="font-size: 16px;"></i>
-        </button>
-      </div>
-      <div class="d-flex flex-column align-items-end small-block" style="font-weight: 600;">
-        <div class="text-label-mini">Draw Time: <span>{{ selected_time }}</span></div>
-        <div class="text-label-mini">Next Draw: <span class="nextDraw">--:--:--</span></div>
-        <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
-      </div>
-    </div>
-    <section id="timeSelector" >
+    <div class="d-flex d-lg-none flex-row flex-wrap justify-content-between align-items-center text-center gap-2 custom-padded-row">
+  <div class="d-flex flex-column align-items-start small-block" style="font-weight: 600;">
+    <div class="text-label-mini">Time: <span class="currentTime">--:--:--</span></div>
+    <div class="text-label-mini">Date: <span>{{ formatted_date }}</span></div>
+  </div>
+  <div class="d-flex flex-row align-items-center gap-1 small-block timeHoverZone" style="font-weight: 600;">
+    <strong class="timeHoverZone main-title-mini">MainsLott</strong>
+    <button type="button" class="btn" onclick="window.location.href = window.location.href;" title="Refresh">
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+      </svg>
+    </button>
+  </div>
+  <div class="d-flex flex-column align-items-end small-block" style="font-weight: 600;">
+    <div class="text-label-mini">Draw Time: <span>{{ selected_time_display }}</span></div>
+    <div class="text-label-mini nextdraw1">Next Draw: <span class="nextDraw">--:--:--</span></div>
+    <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
+  </div>
+</div>
+    <section id="timeSelector" class="timeSelector">
       <form method="post" id="mainForm" class="d-flex flex-wrap align-items-center justify-content-center gap-2">
         {% csrf_token %}
-        <!-- Date & Time -->
-          <div class="d-flex flex-row align-items-center gap-1 small-field">
-          <label class="form-label mb-0" for="dateInput"><strong>Select Date:</strong></label>
-          <input type="date" id="dateInput" name="date" value="{{ selected_date }}" class="autoSubmit form-control form-control-sm" style="font-weight: bold; width: auto;">
+        <div class="d-flex flex-row align-items-center small-field" style="margin: 0; padding: 0;">
+          <label class="form-label mb-0" for="dateInput" style="margin: 0; padding: 0; font-weight: bold;">Select Date:</label>
+          <input type="date" id="dateInput" name="date" value="{{ selected_date }}" class="autoSubmit form-control selectdate"
+                style="margin: 0; padding: 0 2px; font-weight: bold;">
         </div>
-        <div class="d-flex flex-row align-items-center gap-1 small-field">
-          <label class="form-label mb-0" for="timeInput"><strong>Select Time:</strong></label>
-          <select name="time" id="timeInput" class="autoSubmit form-select form-select-sm" onchange="setMode()" style="font-weight: bold; width: auto;">
+        <div class="d-flex flex-row align-items-center small-field" style="margin: 0; padding: 0;">
+          <label class="form-label mb-0" for="timeInput" style="margin: 0; padding: 0; font-weight: bold;">Select Time:</label>
+          <select name="time" id="timeInput" class="autoSubmit form-select form-select-sm no-arrow" onchange="setMode()"
+                  style="margin: 0; padding: 0 2px; font-weight: bold; width: auto;">
             <option value="" {% if not selected_time and show_history != '4' %}selected{% endif %}>All Times</option>
             {% for slot in time_slots %}
               <option value="{{ slot }}" {% if slot == selected_time and show_history != '4' %}selected{% endif %}>{{ slot }}</option>
@@ -293,14 +428,11 @@ td{
           </select>
         </div>
         <input type="hidden" id="currentSlotTime" value="{{ selected_time }}">
-        <!-- Buttons -->
-        <button type="button" class="btn btn-success btn-sm" id="btnSingle">SINGLE</button>
-        <button type="button" class="btn btn-success btn-sm" id="btnTwo">TWO</button>
-        <button type="button" class="btn btn-success btn-sm" id="btnFull">FULL</button>
-
-          <!-- History Dropdown -->
+        <button type="button" class="btn btn-success btn-sm"  style="background:#52655c;color:white"  id="btnSingle">SINGLE</button>
+        <button type="button" class="btn btn-success btn-sm"  style="background:#52655c;color:white" id="btnTwo">TWO</button>
+        <button type="button" class="btn btn-success btn-sm"  style="background:#52655c;color:white" id="btnFull">FULL</button>
           <div class="dropdown dropend">
-            <button class="btn btn-success dropdown-toggle btn-sm" id="btnHistory" type="button" data-bs-toggle="dropdown">
+            <button class="btn btn-success dropdown-toggle btn-sm"  style="background:#52655c;color:white" id="btnHistory" type="button" data-bs-toggle="dropdown">
               HISTORY
             </button>
             <ul class="dropdown-menu">
@@ -316,172 +448,174 @@ td{
       </form>
     </section>
   </div>
-    {% if show_history == "1" or show_history == "2" %}
-    <div  id="resultArea">
-      <table class="table table-bordered text-center" style="font-weight:bold;border: 1px solid black;">
-        <thead>
-          <tr>
-            <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;"></th>
-            {% for col in column_headers|slice:":10" %}
-              <th class="result-cell" style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">{{ col }}</th>
+<div class="page-content" id="pageContent">
+  {% if show_history == "1" or show_history == "2" %}
+  <div  id="resultArea">
+    <table class="table table-bordered text-center" style="font-weight:bold;border: 1px solid black;">
+      <thead>
+        <tr>
+          <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;"></th>
+          {% for col in column_headers|slice:":10" %}
+            <th class="result-cell" style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in grid|slice:":10" %}
+          <tr class="result-cell" style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">
+            <th class="result-cell" style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">
+                {{ forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|stringformat:"02d" }}
+            </th>
+            {% for cell in row %}
+              {% if forloop.counter0 == 0 %}
+                <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 1 %}
+                <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 2 %}
+                <td class="result-cell" style="background-color:#85d825; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 3 %}
+                <td class="result-cell" style="background-color:#ea8d9e; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 4 %}
+                <td class="result-cell" style="background-color:#e3a0ef; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 5 %}
+                <td class="result-cell" style="background-color:#d47c8c; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 6 %}
+                <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 7 %}
+                <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 8 %}
+                <td class="result-cell" style="background-color:#5bbfec; font-weight:bold;" align="center">
+              {% elif forloop.counter0 == 9 %}
+                <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">
+              {% else %}
+                <td>
+              {% endif %}
+                {{ cell|default:"--" }}
+                </td>
             {% endfor %}
           </tr>
-        </thead>
-        <tbody>
-          {% for row in grid|slice:":10" %}
-            <tr class="result-cell" style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">
-              <th class="result-cell" style="background-color: #131a3e !important;color: white !important;border: 1px solid white !important;">
-                  {{ forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0|stringformat:"02d" }}
-              </th>
-              {% for cell in row %}
-                {% if forloop.counter0 == 0 %}
-                  <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 1 %}
-                  <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 2 %}
-                  <td class="result-cell" style="background-color:#85d825; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 3 %}
-                  <td class="result-cell" style="background-color:#ea8d9e; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 4 %}
-                  <td class="result-cell" style="background-color:#e3a0ef; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 5 %}
-                  <td class="result-cell" style="background-color:#d47c8c; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 6 %}
-                  <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 7 %}
-                  <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 8 %}
-                  <td class="result-cell" style="background-color:#5bbfec; font-weight:bold;" align="center">
-                {% elif forloop.counter0 == 9 %}
-                  <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">
-                {% else %}
-                  <td>
-                {% endif %}
-                  {{ cell|default:"--" }}
-                  </td>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif show_history == "4" %}
+    <!-- history results -->
+    {% if history_mode == "full" %}
+      <div id="historyTable">
+        {% if history_data %}
+          {% for slot, rows in history_data %}
+              <div class="result-heading d-flex justify-content-between align-items-center px-2" style=" font-weight: bold;">
+                <div>MainsLott</div>
+                <div>{{ slot }}</div>
+                <div>{{ selected_date_display }}</div>
+              </div>
+            <table class="table table-bordered text-center" cellspacing="0" border="2" style="border-collapse:collapse; margin:0 auto;border: 1px solid black;">
+              <tbody>
+                {% for row in rows %}
+                  <tr>
+                    {% for cell in row %}
+                      {% if forloop.counter0 == 0 %}
+                        <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 1 %}
+                        <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 2 %}
+                        <td class="result-cell" style="background-color:#85d825; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 3 %}
+                        <td class="result-cell" style="background-color:#ea8d9e; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 4 %}
+                        <td class="result-cell" style="background-color:#e3a0ef; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 5 %}
+                        <td class="result-cell" style="background-color:#d47c8c; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 6 %}
+                        <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 7 %}
+                        <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 8 %}
+                        <td class="result-cell" style="background-color:#5bbfec; font-weight:bold;" align="center">
+                      {% elif forloop.counter0 == 9 %}
+                        <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">
+                      {% else %}
+                        <td>
+                      {% endif %}
+                        {{ cell.number|default:"--" }}
+                      </td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% endfor %}
+        {% endif %}
+      </div>
+      {% elif history_mode == "chart" %}
+        <div id="chartbuttons" class="container chart_table my-3 ">
+          <form method="post" id="chartForm">
+            {% csrf_token %}
+            <input type="hidden" name="history_mode" value="chart" />
+            <div class="row g-2 justify-content-center">
+              {% for i in "0123456789"|make_list %}
+                <div class="col-4 col-sm-3 col-md-2 col-lg-1 d-flex justify-content-center">
+                  <button type="submit" name="chart_prefix" value="{{ i }}0" class="btn btn-warning w-100">
+                    {{ i }}0
+                  </button>
+                </div>
+              {% endfor %}
+            </div>
+          </form>
+        </div>
+        <table class="table table-bordered text-center">
+          <thead>
+            <tr>
+              <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">TIME</th>
+              {% for i in "0123456789"|make_list %}
+                <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">{{ selected_chart_prefix|add:i }}</th>
               {% endfor %}
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% elif show_history == "4" %}
-      <!-- history results -->
-      {% if history_mode == "full" %}
-        <div id="historyTable" >
-          {% if history_data %}
-            {% for slot, rows in history_data %}
-                <div class="result-heading d-flex justify-content-between align-items-center px-2" style=" font-weight: bold;">
-                  <div>MainsLott</div>
-                  <div>{{ slot }}</div>
-                  <div>{{ selected_date_display }}</div>
-                </div>
-              <table class="table table-bordered text-center" cellspacing="0" border="2" style="border-collapse:collapse; margin:0 auto;border: 1px solid black;">
-                <tbody>
-                  {% for row in rows %}
-                    <tr>
-                      {% for cell in row %}
-                        {% if forloop.counter0 == 0 %}
-                          <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 1 %}
-                          <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 2 %}
-                          <td class="result-cell" style="background-color:#85d825; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 3 %}
-                          <td class="result-cell" style="background-color:#ea8d9e; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 4 %}
-                          <td class="result-cell" style="background-color:#e3a0ef; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 5 %}
-                          <td class="result-cell" style="background-color:#d47c8c; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 6 %}
-                          <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 7 %}
-                          <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 8 %}
-                          <td class="result-cell" style="background-color:#5bbfec; font-weight:bold;" align="center">
-                        {% elif forloop.counter0 == 9 %}
-                          <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">
-                        {% else %}
-                          <td>
-                        {% endif %}
-                          {{ cell.number|default:"--" }}
-                        </td>
-                      {% endfor %}
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            {% endfor %}
-          {% endif %}
-        </div>
-        {% elif history_mode == "chart" %}
-          <div id="chartbuttons" class="container chart_table my-3">
-            <form method="post" id="chartForm">
-              {% csrf_token %}
-              <input type="hidden" name="history_mode" value="chart" />
-              <div class="row g-2 justify-content-center">
-                {% for i in "0123456789"|make_list %}
-                  <div class="col-4 col-sm-3 col-md-2 col-lg-1 d-flex justify-content-center">
-                    <button type="submit" name="chart_prefix" value="{{ i }}0" class="btn btn-warning w-100">
-                      {{ i }}0
-                    </button>
-                  </div>
-                {% endfor %}
-              </div>
-            </form>
-          </div>
-          <table class="table table-bordered text-center">
-            <thead>
+          </thead>
+          <tbody style="border: 1px solid black;">
+            {% for time_label, row in chart_data %}
               <tr>
-                <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">TIME</th>
-                {% for i in "0123456789"|make_list %}
-                  <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">{{ selected_chart_prefix|add:i }}</th>
+                <td class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">{{ time_label }}</td>
+                {% for value in row %}
+                  {% if forloop.counter0 == 0 %}
+                    <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 1 %}
+                    <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 2 %}
+                    <td class="result-cell" style="background-color:#85d825; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 3 %}
+                    <td class="result-cell" style="background-color:#ea8d9e; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 4 %}
+                    <td class="result-cell" style="background-color:#e3a0ef; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 5 %}
+                    <td class="result-cell" style="background-color:#d47c8c; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 6 %}
+                    <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 7 %}
+                    <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 8 %}
+                    <td class="result-cell" style="background-color:#5bbfec; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% elif forloop.counter0 == 9 %}
+                    <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
+                  {% else %}
+                    <td>{{ value|default:"--" }}</td>
+                  {% endif %}
                 {% endfor %}
               </tr>
-            </thead>
-            <tbody style="border: 1px solid black;">
-              {% for time_label, row in chart_data %}
-                <tr>
-                  <td class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">{{ time_label }}</td>
-                  {% for value in row %}
-                    {% if forloop.counter0 == 0 %}
-                      <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 1 %}
-                      <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 2 %}
-                      <td class="result-cell" style="background-color:#85d825; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 3 %}
-                      <td class="result-cell" style="background-color:#ea8d9e; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 4 %}
-                      <td class="result-cell" style="background-color:#e3a0ef; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 5 %}
-                      <td class="result-cell" style="background-color:#d47c8c; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 6 %}
-                      <td class="result-cell" style="background-color:#ecd4d8; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 7 %}
-                      <td class="result-cell" style="background-color:#FFEB3B; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 8 %}
-                      <td class="result-cell" style="background-color:#5bbfec; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% elif forloop.counter0 == 9 %}
-                      <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">{{ value|default:"--" }}</td>
-                    {% else %}
-                      <td>{{ value|default:"--" }}</td>
-                    {% endif %}
-                  {% endfor %}
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        {% else %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
         <!-- single & two historydata -->
+        <div>
         {% for label, grid in history_data %}
-            <div class="result-heading d-flex justify-content-between align-items-center px-3" style="font-weight: bold;">
+            <div class="result-heading d-flex justify-content-between align-items-center px-3 " style="font-weight: bold;">
               <div>MainsLott</div>
               <div>{{ label }}</div>
               <div>{{ selected_date_display }}</div>
             </div>
             <div>
-              <table class="result-cell table table-bordered text-center" style="font-weight:bold;border: 1px solid black;">
+              <table class="result-cell table table-bordered text-center" style="margin-bottom: 0px;font-weight:bold;border: 1px solid black;">
                 <thead class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;">
                   <tr>
                     <th class="result-cell" style="background-color: #131a3e;color: white;border: 1px solid white;"></th>
@@ -528,11 +662,12 @@ td{
                 </tbody>
               </table>
             </div>
+          </div>
           {% endfor %}
       {% endif %}
     {% else %}
       <!-- Full table button -->
-      <div id="fullTable" >
+      <div id="fullHistoryContent">
         <table class="table table-bordered text-center" cellspacing="0" rules="all" border="1" id="GridView1" style="border-collapse:collapse;margin:0 auto;border: 1px solid black;">
           {% if results_exist %}
             {% for row in grid %}
@@ -573,9 +708,10 @@ td{
     </div>
     {% endif %}
 </div>
-<footer>
+</div>
+<!-- <footer>
   <p style="margin-top: 0;margin-bottom: 0rem;">&copy; 2025 Mainslott.in</p>
-</footer>
+</footer> -->
 <script>
 function updateTimes() {
   const now = new Date();
@@ -599,11 +735,16 @@ function updateTimes() {
     el.textContent = formattedTime;
   });
 
-  // Update countdown to next draw
+ // Update countdown to next draw
   const nextDrawInput = document.querySelector(".nextDrawTime");
   if (nextDrawInput) {
     const nextDraw = new Date(nextDrawInput.value);
-    const diff = nextDraw - kolkataTime;
+    const now = new Date();
+    const diff = nextDraw - now;
+
+    // Define today's 9:30 PM limit
+    const today = new Date();
+    const lastDrawToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 21, 30, 0);
 
     if (diff > 0) {
       const totalSeconds = Math.floor(diff / 1000);
@@ -612,7 +753,13 @@ function updateTimes() {
       const seconds = String(totalSeconds % 60).padStart(2, '0');
 
       document.querySelectorAll(".nextDraw").forEach(el => {
-        el.textContent = `${hours}:${minutes}:${seconds}`;
+        if (now >= lastDrawToday) {
+          // After 9:30 PM: show h:m:s
+          el.textContent = `${hours}:${minutes}:${seconds}`;
+        } else {
+          // Before 9:30 PM: show m:s
+          el.textContent = `${minutes}:${seconds}`;
+        }
       });
     } else {
       location.reload();  // Refresh after draw time
@@ -722,31 +869,54 @@ function setMode() {
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const showHistory = "{{ show_history }}";
-  const timeSelector = document.getElementById("timeSelector");
+  const timeSelector = document.querySelector(".timeSelector");
+  const pageContent = document.getElementById("pageContent");
+  const hoverZones = document.querySelectorAll(".timeHoverZone");
+  const headerWrapper = document.getElementById("headerWrapper");
   const isMobile = window.innerWidth <= 768;
 
-  if (showHistory === "3") {
-    timeSelector.style.display = "none";
+  function showTimeSelector() {
+    timeSelector?.classList.add("show");
+    if (pageContent) {
+      pageContent.classList.remove("collapsed-padding");
+      pageContent.classList.add("expanded-padding");
+    }
+  }
 
-    const hoverZones = document.querySelectorAll(".timeHoverZone");
+  function hideTimeSelector() {
+    timeSelector?.classList.remove("show");
+    if (pageContent) {
+      pageContent.classList.remove("expanded-padding");
+      pageContent.classList.add("collapsed-padding");
+    }
+  }
 
-    hoverZones.forEach((zone) => {
-      if (isMobile) {
+  if (isMobile) {
+    if (showHistory === "3") {
+      timeSelector?.classList.remove("show"); // Start hidden
+      hoverZones.forEach(zone => {
         zone.addEventListener("click", () => {
-          timeSelector.style.display =
-            timeSelector.style.display === "block" ? "none" : "block";
+          if (timeSelector?.classList.contains("show")) {
+            timeSelector.classList.remove("show");
+          } else {
+            timeSelector.classList.add("show");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
         });
-      } else {
-        zone.addEventListener("mouseenter", () => {
-          timeSelector.style.display = "block";
-        });
-        timeSelector.addEventListener("mouseleave", () => {
-          timeSelector.style.display = "none";
-        });
-      }
-    });
+      });
+    } else {
+      // Always show for mobile if not "3"
+      timeSelector?.classList.add("show");
+    }
   } else {
-    timeSelector.style.display = "block";
+    // DESKTOP
+    if (showHistory === "3") {
+      hideTimeSelector();
+      headerWrapper?.addEventListener("mouseenter", showTimeSelector);
+      headerWrapper?.addEventListener("mouseleave", hideTimeSelector);
+    } else {
+      showTimeSelector();
+    }
   }
 });
 </script>
@@ -830,9 +1000,19 @@ function updateCountdown(newSeconds) {
    // console.error("Polling error:", error);
   //}
 //}
-
 setInterval(pollNextDrawTime, 5000);
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const headerZone = document.querySelector(".timeHoverZone");
+  const timeSelector = document.querySelector(".timeSelector");
 
+  if (window.innerWidth <= 768 && headerZone && timeSelector) {
+    headerZone.addEventListener("click", () => {
+      timeSelector.classList.toggle("show");
+    });
+  }
+});
+</script>
 </body>
 </html>

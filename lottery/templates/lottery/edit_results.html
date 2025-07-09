@@ -149,6 +149,7 @@ function updateTimes() {
   const now = new Date();
   const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
+  // Update Current Time
   const currentTimeElem = document.getElementById("currentTime");
   if (currentTimeElem) {
     const hours = kolkataTime.getHours();
@@ -160,6 +161,7 @@ function updateTimes() {
       `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
   }
 
+  // Countdown to next draw
   const nextDrawInput = document.getElementById("nextDrawTime");
   const nextDrawElem = document.getElementById("nextDraw");
 
@@ -168,25 +170,19 @@ function updateTimes() {
   let nextDraw = new Date(nextDrawInput.value);
   let diff = nextDraw - kolkataTime;
 
-  // If nextDraw time already passed (e.g. after 9:30 PM), set countdown to next day 9:00 AM
   if (diff <= 0) {
-    const tomorrow9am = new Date(kolkataTime);
-    tomorrow9am.setDate(tomorrow9am.getDate() + 1);
-    tomorrow9am.setHours(9, 0, 0, 0);
-    diff = tomorrow9am - kolkataTime;
+    // Time's up — reload to get next draw time from server
     location.reload();
+    return;
   }
 
-  if (diff > 0) {
-    const totalSeconds = Math.floor(diff / 1000);
-    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-    const s = String(totalSeconds % 60).padStart(2, '0');
-    nextDrawElem.textContent = `${h}:${m}:${s}`;
-  } else {
-    nextDrawElem.textContent = "00:00:00";
-  }
+  const totalSeconds = Math.floor(diff / 1000);
+  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+  const s = String(totalSeconds % 60).padStart(2, '0');
+  nextDrawElem.textContent = `${h}:${m}:${s}`;
 }
+
 setInterval(updateTimes, 1000);
 updateTimes();
 </script>

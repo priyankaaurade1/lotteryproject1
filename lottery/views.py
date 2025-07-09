@@ -320,20 +320,16 @@ def get_next_draw_time(now):
 def next_draw_time_api(request):
     now = timezone.localtime()
     offset = DrawOffset.get_offset()
-
     next_draw_time = get_next_draw_time(now)
     if not next_draw_time:
         return JsonResponse({
             'next_draw_time_str': '',
             'total_seconds': 0,
         })
-
     # Compute remaining seconds from now
     total_seconds = max(0, int((next_draw_time + offset - now).total_seconds()))
-
     print("OFFSET:", offset)
     print("NEXT DRAW:", next_draw_time)
-
     return JsonResponse({
         'next_draw_time_str': next_draw_time.strftime("%Y-%m-%dT%H:%M:%S"),
         'total_seconds': total_seconds,
@@ -386,6 +382,8 @@ def index(request):
             if slot:
                 selected_time_obj = slot.time()
                 selected_time = selected_time_obj.strftime('%I:%M %p')
+
+    
     results_exist = False
     current_slot_label = ""
     grid = [[None for _ in range(10)] for _ in range(10)]
@@ -538,10 +536,17 @@ def index(request):
     column_headers = list(range(11))
     row_headers = [f"{i:02}" for i in range(0, 100, 10)] 
     selected_date_display = selected_date_obj.strftime('%d-%m-%Y')
-    if selected_time_obj:
-        selected_time_display = selected_time_obj.strftime('%I:%M %p')
+
+    if show_history == "4":
+      selected_time_display = "All Times"
+    elif selected_time_obj:
+      selected_time_display = selected_time_obj.strftime('%I:%M %p')
+    elif selected_date_obj == today:
+      selected_time_display = current_slot_time
     else:
-        selected_time_display = "All Times"
+      selected_time_display = "All Times"
+
+
     return render(request, 'index.html', {
         'grid': grid,
         'column_headers': column_headers,
