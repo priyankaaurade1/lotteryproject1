@@ -132,6 +132,9 @@ td{
     .nextdraw{
       margin-right: 31px;
     }
+    .top-marquee{
+        font-size: small;
+    }
   }
 
   @media (max-width: 336px) {
@@ -165,6 +168,9 @@ td{
   .nextdraw{
   margin-right: 31px;
 }
+.top-marquee{
+        font-size: small;
+    }
 }
   /* Mobile view ≤576px */
   @media screen and (max-width: 576px) {
@@ -174,7 +180,7 @@ td{
       line-height: 1.2;
     }
     .nextdraw1{
-      margin-right: 25px;
+      margin-right: 8px;
     }
     .main-title-mini {
       font-size: 18px;
@@ -205,6 +211,9 @@ td{
     }
     .selectdate{
       width: 88px;
+    }
+    .top-marquee{
+        font-size: small;
     }
   }
   /* Medium desktop (992–1400px) - Make it smaller to fit better */
@@ -238,6 +247,9 @@ td{
     .refreshbtn{
       margin-left: 33px;
     }
+    .top-marquee{
+        font-size: larger;
+    }
   }
   /* Large desktop ≥1401px - Keep your big style */
   @media screen and (min-width: 1401px) {
@@ -269,6 +281,9 @@ td{
     }
     .refreshbtn{
       margin-left: 62px;
+    }
+    .top-marquee{
+        font-size: larger;
     }
   }
 </style>
@@ -363,7 +378,7 @@ select.no-arrow {
 </head>
 <body>
 <div class="container-fluid">
-  <marquee class="top-marquee" behavior="" direction="" style="font-size: larger;">
+  <marquee class="top-marquee" behavior="" direction="" >
       Note :- All the information here is based on Numeric astrology is not related to any type of gambling. Viewing this website is on your own risk. We are not responsible for any issue or scam. We respect all country rules and laws. If you not agree with our site, please quit our site right now..!!
   </marquee>
   <div class="head container-fluid bg-light main-header" id="headerWrapper">
@@ -396,8 +411,8 @@ select.no-arrow {
   </div>
   <div class="d-flex flex-row align-items-center gap-1 small-block timeHoverZone" style="font-weight: 600;">
     <strong class="timeHoverZone main-title-mini">MainsLott</strong>
-    <button type="button" class="btn" onclick="window.location.href = window.location.href;" title="Refresh">
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+    <button type="button" class="btn" style="padding: 0;" onclick="window.location.href = window.location.href;" title="Refresh">
+      <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
         <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
         <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
       </svg>
@@ -502,7 +517,6 @@ select.no-arrow {
   {% else %}
     <div class="text-center my-4" style="font-size: larger; font-weight: bold; padding: 30px;">No Results Found...!</div>
   {% endif %}
-
 {% elif show_history == "4" %}
   {% if history_mode == "full" %}
     <div id="historyTable">
@@ -553,7 +567,6 @@ select.no-arrow {
         <div class="text-center my-4" style="font-size: larger; font-weight: bold; padding: 30px;">No Results Found...!</div>
       {% endif %}
     </div>
-
   {% elif history_mode == "chart" %}
     {% if chart_data %}
       <div id="chartbuttons" class="container chart_table my-3 ">
@@ -972,7 +985,6 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 <script>
 let nextDrawTimeStr = document.querySelector(".nextDrawTime").value;
-
 function showBlackScreen() {
   const overlay = document.createElement('div');
   overlay.style.position = "fixed";
