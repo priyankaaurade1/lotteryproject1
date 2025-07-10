@@ -52,29 +52,25 @@ button {
 {% endif %} -->
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 px-3 py-2"
-     style="font-size: 1.2rem; font-weight: 600; background-color: #f1f1f1; border-radius: 8px;">
-  
+     style="font-size: 1.8rem; font-weight: 600; background-color: #f1f1f1; border-radius: 8px;">
   <!-- Time Display -->
   <div class="flex-grow-1" style="min-width: 120px;">
     Time: <span id="currentTime">--:--:--</span>
   </div>
-
   <!-- Date & Time Form -->
   <form method="POST" id="autoSubmitForm" class="d-flex flex-wrap align-items-center gap-2 mb-0">
     {% csrf_token %}
-    
     <!-- Date -->
     <div class="d-flex align-items-center gap-1" style="min-width: 160px;">
       <label class="mb-0" style="white-space: nowrap;">Date:</label>
       <input type="date" name="date" value="{{ selected_date|default:'' }}"
-             class="form-control form-control-sm" style="font-size: 1rem; max-width: 140px;"
+             class="form-control form-control-sm" style="font-size: 1.2rem; max-width: 140px;"
              onchange="document.getElementById('autoSubmitForm').submit()">
     </div>
-
     <!-- Time -->
     <div class="d-flex align-items-center gap-1" style="min-width: 180px;">
       <label class="mb-0" style="white-space: nowrap;">Draw Time:</label>
-      <select name="time_slot" class="form-control form-control-sm" style="font-size: 1rem; max-width: 140px;"
+      <select name="time_slot" class="form-control form-control-sm" style="font-size: 1.2rem; max-width: 140px;"
               onchange="document.getElementById('autoSubmitForm').submit()">
         {% for slot in all_slots %}
           {% if selected_date != today or slot > current_time %}
@@ -84,64 +80,66 @@ button {
       </select>
     </div>
   </form>
-
   <!-- Countdown -->
   <div class="flex-grow-1 text-end" style="min-width: 140px;">
-    <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
-    Left Time: <span id="nextDraw">--:--:--</span>
+    <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
+    Left Time: <span class="nextDraw">--:--:--</span>
   </div>
 </div>
-
 <form method="POST" action="{% url 'update_all_results' %}">
   {% csrf_token %}
-
   <!-- Scrollable container for table -->
   <div style="max-height: 700px; overflow-y: auto; overflow-x: auto; border: 1px solid #ccc; border-radius: 6px;">
-    <table class="table table-bordered text-center mb-0" style="min-width: 1000px;">
-      {% for row in table %}
-      <tr>
-        {% for cell in row %}
-        <td style="background-color:
-          {% if forloop.counter0 == 0 %}#FFD700
-          {% elif forloop.counter0 == 1 %}#DDA0DD
-          {% elif forloop.counter0 == 2 %}#90EE90
-          {% elif forloop.counter0 == 3 %}#FFB6C1
-          {% elif forloop.counter0 == 4 %}#CD5C5C
-          {% elif forloop.counter0 == 5 %}#F5DEB3
-          {% elif forloop.counter0 == 6 %}#ADD8E6
-          {% elif forloop.counter0 == 7 %}#FFC0CB
-          {% elif forloop.counter0 == 8 %}#87CEEB
-          {% elif forloop.counter0 == 9 %}#FFA07A
-          {% endif %};">
-
-          {% if cell %}
-            <div class="d-flex justify-content-center align-items-center">
-              <strong style="font-size: 26px;">{{ cell.first_two_digits }}</strong>
-              {% if cell.is_editable and is_editable %}
-                <input type="hidden" name="ids" value="{{ cell.pk }}">
-                <input type="text" name="last_two_{{ cell.pk }}" value="{{ cell.last_two_digits }}"
-                       maxlength="2" size="2" class="form-control form-control-sm ms-1"
-                       style="width:50px; font-size: 26px; margin-left: 0.75rem !important;" />
+  <table class="table table-bordered text-center mb-0" style="min-width: 1000px;">
+    {% for row in table %}
+      {% with row_index=forloop.counter0 %}
+        <tr>
+          {% for cell in row %}
+            <td style="background-color:
+              {% if row_index == 0 %}#FFD700
+              {% elif row_index == 1 %}#DDA0DD
+              {% elif row_index == 2 %}#90EE90
+              {% elif row_index == 3 %}#FFB6C1
+              {% elif row_index == 4 %}#CD5C5C
+              {% elif row_index == 5 %}#F5DEB3
+              {% elif row_index == 6 %}#ADD8E6
+              {% elif row_index == 7 %}#FFC0CB
+              {% elif row_index == 8 %}#87CEEB
+              {% elif row_index == 9 %}#FFA07A
+              {% endif %};">
+              {% if cell %}
+                <div class="d-flex justify-content-center align-items-center">
+                  <strong style="font-size: 26px;">{{ cell.first_two_digits }}</strong>
+                  {% if cell.is_editable and is_editable %}
+                    <input type="hidden" name="ids" value="{{ cell.pk }}">
+                    <input type="text" name="last_two_{{ cell.pk }}" value="{{ cell.last_two_digits }}"
+                           maxlength="2" size="2" class="form-control form-control-sm ms-1"
+                           style="width:50px; font-size: 26px; margin-left: 0.75rem !important;" />
+                  {% else %}
+                    <span class="ms-1" style="margin-left: 0.75rem !important; font-size: 25px; ">{{ cell.last_two_digits }}</span>
+                  {% endif %}
+                </div>
               {% else %}
-                <span class="ms-1" style="margin-left: 0.75rem !important; font-size: 25px; ">{{ cell.last_two_digits }}</span>
+                ----
               {% endif %}
-            </div>
-          {% else %}
-            ----
-          {% endif %}
-        </td>
-        {% endfor %}
-      </tr>
-      {% endfor %}
-    </table>
-  </div>
-
+            </td>
+          {% endfor %}
+        </tr>
+      {% endwith %}
+    {% endfor %}
+  </table>
+</div>
   <div class="text-center mt-3">
     {% if is_editable %}
       <button type="submit" class="btn btn-primary" style="background: #1e1e2f;color: white;">Update</button>
     {% else %}
       <button type="button" class="btn btn-secondary" disabled>Cannot Edit Past Results</button>
     {% endif %}
+    <input type="hidden" class="nextDrawTime" value="{{ next_draw_time_str }}">
+<span style="color: rgb(126, 10, 10); font-size: large; font-weight: bold;">
+  Left Time: <span class="nextDraw ms-1">--:--:--</span>
+</span>
+  </div>
   </div>
 </form>
 <script>
@@ -162,47 +160,33 @@ function updateTimes() {
   }
 
   // Countdown to next draw
-  const nextDrawInput = document.getElementById("nextDrawTime");
-  const nextDrawElem = document.getElementById("nextDraw");
+  const nextDrawInputs = document.querySelectorAll(".nextDrawTime");
+  const nextDrawElems = document.querySelectorAll(".nextDraw");
 
-  if (!nextDrawInput || !nextDrawElem) return;
+  if (!nextDrawInputs.length || !nextDrawElems.length) return;
 
-  let nextDraw = new Date(nextDrawInput.value);
-  let diff = nextDraw - kolkataTime;
+  nextDrawInputs.forEach((input, index) => {
+    const nextDraw = new Date(input.value);
+    const diff = nextDraw - kolkataTime;
 
-  if (diff <= 0) {
-    // Time's up — reload to get next draw time from server
-    location.reload();
-    return;
-  }
+    if (diff <= 0) {
+      location.reload();
+      return;
+    }
 
-  const totalSeconds = Math.floor(diff / 1000);
-  const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-  const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-  const s = String(totalSeconds % 60).padStart(2, '0');
-  nextDrawElem.textContent = `${h}:${m}:${s}`;
+    const totalSeconds = Math.floor(diff / 1000);
+    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const s = String(totalSeconds % 60).padStart(2, '0');
+
+    // Safety: only update existing span
+    if (nextDrawElems[index]) {
+      nextDrawElems[index].textContent = `${h}:${m}:${s}`;
+    }
+  });
 }
 
 setInterval(updateTimes, 1000);
 updateTimes();
-</script>
-<script>
-  // Confirm before submitting postpone
-  document.addEventListener("DOMContentLoaded", function () {
-    const postponeBtn = document.querySelector('form button[name="postpone"]');
-    if (postponeBtn) {
-      postponeBtn.addEventListener("click", function (e) {
-        const confirmPostpone = confirm("Are you sure you want to postpone draw?");
-        if (!confirmPostpone) {
-          e.preventDefault();
-        }
-      });
-    }
-    // Auto-hide success messages after 3 seconds
-    const alert = document.querySelector(".alert-success");
-    if (alert) {
-      setTimeout(() => alert.style.display = "none", 3000);
-    }
-  });
 </script>
 {% endblock %}

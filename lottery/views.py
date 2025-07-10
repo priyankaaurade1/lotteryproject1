@@ -545,7 +545,10 @@ def index(request):
       selected_time_display = current_slot_time
     else:
       selected_time_display = "All Times"
-
+    has_results = any(
+      any(bool(cell and str(cell).strip()) for cell in row)
+      for row in grid
+    )
 
     return render(request, 'index.html', {
         'grid': grid,
@@ -568,4 +571,5 @@ def index(request):
         'selected_date_display': selected_date_display,
         'selected_time_display': selected_time_display,
         'mode':mode,
+        'has_results':has_results
     })
