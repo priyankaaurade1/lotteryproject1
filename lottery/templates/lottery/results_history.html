@@ -1,83 +1,92 @@
 {% extends 'lottery/base_adminpanel.html' %}
 {% block content %}
 <style>
-  body, html {
-    overflow-x: hidden;
+  /* Remove default container padding that can shrink table on mobile */
+  .container-fluid, .container {
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
   }
 
-  .history-title {
-    text-align: center;
-    font-weight: bold;
+  h2.history-title {
     margin: 10px 0;
-    font-size: 1.4rem;
-    padding: 0 10px;
-    word-wrap: break-word;
-  }
-
-  @media (max-width: 768px) {
-    .history-title {
-      font-size: 1.2rem;
-      margin: 8px 0;
-      padding: 0 5px;
-    }
+    padding: 0;
+    font-weight: bold;
+    text-align: center;
   }
 
   #historyForm {
     font-weight: bold;
     font-size: 1rem;
-    margin-bottom: 0.75rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    gap: 0.75rem;
+    padding: 5px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #historyForm .form-control,
+  #historyForm .form-select {
+    min-width: 140px;
   }
 
   @media (max-width: 768px) {
     #historyForm {
       font-size: 0.9rem;
+      padding: 3px;
+    }
+
+    #historyForm .form-control,
+    #historyForm .form-select {
+      min-width: 120px;
+      font-size: 0.85rem;
     }
   }
 
   .table-responsive {
-    width: 100%;
+    margin: 0;
+    padding: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 0;
-    margin: 0;
   }
 
   .table {
-    min-width: 600px;
-    width: max-content;
+    margin: 0;
+    width: auto;
   }
 
   td {
-    padding: 6px;
+    padding: 4px;
     text-align: center;
     font-weight: bold;
     font-size: 0.95rem;
+    white-space: nowrap;
   }
 
   @media (max-width: 768px) {
     td {
       font-size: 0.85rem;
-      padding: 4px;
+      padding: 2px;
     }
   }
 </style>
-<div class="container-fluid px-2">
+
+<div class="container-fluid">
   <h2 class="history-title">All Previous Results</h2>
 
-  <form method="post" id="historyForm" class="row g-2">
+  <form method="post" id="historyForm">
     {% csrf_token %}
-    <div class="col-12 col-md-3">
-      <label class="form-label mb-1">Time:</label>
-      <div class="d-flex align-items-center gap-2">
-        <span id="currentTime">--:--:--</span>
-      </div>
+    <div>
+      <label class="mb-0">Time:</label>
+      <span id="currentTime">--:--:--</span>
     </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label mb-1">Date:</label>
+    <div>
+      <label class="mb-0">Date:</label>
       <input type="date" name="date" value="{{ selected_date }}" class="autoSubmit form-control form-control-sm">
     </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label mb-1">Slot:</label>
+    <div>
+      <label class="mb-0">Slot:</label>
       <select name="time" class="autoSubmit form-select form-select-sm">
         <option {% if not selected_time or selected_time == "All Times" %}selected{% endif %}>All Times</option>
         {% for slot in time_slots %}
@@ -85,11 +94,9 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-12 col-md-3">
-      <label class="form-label mb-1">Left:</label>
-      <div class="d-flex align-items-center gap-2">
-        <span id="nextDraw">--:--:--</span>
-      </div>
+    <div>
+      <label class="mb-0">Left:</label>
+      <span id="nextDraw">--:--:--</span>
     </div>
     <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
   </form>
@@ -100,38 +107,41 @@
     </div>
   {% endif %}
 
-  {% for group in result_tables %}
-    <h5 class="text-center mt-2 mb-1">{{ group.date }} - {{ group.time_slot }}</h5>
-    <div class="table-responsive">
-      <table class="table table-bordered text-center mb-0">
-        {% for row in group.table %}
-          <tr>
-            {% for cell in row %}
-              <td style="background-color:
-                {% if forloop.counter0 == 0 %}#FFD700
-                {% elif forloop.counter0 == 1 %}#DDA0DD
-                {% elif forloop.counter0 == 2 %}#90EE90
-                {% elif forloop.counter0 == 3 %}#FFB6C1
-                {% elif forloop.counter0 == 4 %}#CD5C5C
-                {% elif forloop.counter0 == 5 %}#F5DEB3
-                {% elif forloop.counter0 == 6 %}#ADD8E6
-                {% elif forloop.counter0 == 7 %}#FFC0CB
-                {% elif forloop.counter0 == 8 %}#87CEEB
-                {% elif forloop.counter0 == 9 %}#FFA07A
-                {% endif %};">
-                {% if cell %}
-                  {{ cell.number }}
-                {% else %}
-                  ----
-                {% endif %}
-              </td>
-            {% endfor %}
-          </tr>
-        {% endfor %}
-      </table>
-    </div>
-  {% endfor %}
+  <div class="scrollable-container">
+    {% for group in result_tables %}
+      <h5 class="text-center mt-2 mb-1" style="font-size: 1rem;">{{ group.date }} - {{ group.time_slot }}</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered text-center mb-0">
+          {% for row in group.table %}
+            <tr>
+              {% for cell in row %}
+                <td style="background-color:
+                  {% if forloop.counter0 == 0 %}#FFD700
+                  {% elif forloop.counter0 == 1 %}#DDA0DD
+                  {% elif forloop.counter0 == 2 %}#90EE90
+                  {% elif forloop.counter0 == 3 %}#FFB6C1
+                  {% elif forloop.counter0 == 4 %}#CD5C5C
+                  {% elif forloop.counter0 == 5 %}#F5DEB3
+                  {% elif forloop.counter0 == 6 %}#ADD8E6
+                  {% elif forloop.counter0 == 7 %}#FFC0CB
+                  {% elif forloop.counter0 == 8 %}#87CEEB
+                  {% elif forloop.counter0 == 9 %}#FFA07A
+                  {% endif %};">
+                  {% if cell %}
+                    {{ cell.number }}
+                  {% else %}
+                    ----
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </table>
+      </div>
+    {% endfor %}
+  </div>
 </div>
+
 <script>
 function updateTimes() {
   const now = new Date();
