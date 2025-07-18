@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mainslott</title>
+  <title>MainsLott</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
@@ -570,7 +570,6 @@ td{
     </section>
   </div>
     {% if show_history == "1" or show_history == "2" %}
-  {% if has_results %}
     <div  id="resultArea">
       <table class="table table-bordered text-center" style="font-weight:bold;border: 1px solid black;">
         <thead>
@@ -619,9 +618,6 @@ td{
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="text-center my-4" style="font-size: larger; font-weight: bold; padding: 30px;">No Results Found...!</div>
-    {% endif %}
     {% elif show_history == "4" %}
       <!-- history results -->
       {% if history_mode == "full" %}
@@ -629,7 +625,7 @@ td{
           {% if history_data %}
             {% for slot, rows in history_data %}
                 <div class="result-heading d-flex justify-content-between align-items-center px-2" style=" font-weight: bold;">
-                  <div>Mainslott</div>
+                  <div>MainsLott</div>
                   <div>{{ slot }}</div>
                   <div>{{ selected_date_display }}</div>
                 </div>
@@ -669,9 +665,7 @@ td{
                 </tbody>
               </table>
             {% endfor %}
-          {% else %}
-        <div class="text-center my-4" style="font-size: larger; font-weight: bold; padding: 30px;">No Results Found...!</div>
-      {% endif %}
+          {% endif %}
         </div>
         {% elif history_mode == "chart" %}
           <div id="chartbuttons" class="container chart_table my-3">
@@ -737,12 +731,10 @@ td{
             </tbody>
           </table>
         {% else %}
-      <div class="text-center my-4" style="font-size: larger; font-weight: bold; padding: 30px;">No Results Found...!</div>
-    {% endif %}
         <!-- single & two historydata -->
         {% for label, grid in history_data %}
             <div class="result-heading d-flex justify-content-between align-items-center px-2" style=" font-weight: bold;">
-              <div>Mainslott</div>
+              <div>MainsLott</div>
               <div>{{ label }}</div>
               <div>{{ selected_date_display }}</div>
             </div>
@@ -783,7 +775,6 @@ td{
                         {% elif forloop.counter0 == 9 %}
                           <td class="result-cell" style="background-color:#ffa7dc; font-weight:bold;" align="center">
                         {% else %}
-                          <td>
                         {% endif %}
                           {{ cell|default:"--" }}
                           </td>
@@ -793,10 +784,7 @@ td{
                 </tbody>
               </table>
           {% endfor %}
-          {% else %}
-        <div class="text-center my-4" style="font-size: larger; font-weight: bold; padding: 30px;">No Results Found...!</div>
       {% endif %}
-    </div>
     {% else %}
       <!-- Full table button -->
       <div id="fullTable" >

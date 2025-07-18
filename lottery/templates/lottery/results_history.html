@@ -22,6 +22,48 @@ td {
     padding: 0.25rem 0.4rem !important; 
 }
 </style>
+<style>
+  @media (max-width: 768px) {
+    #historyForm {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      font-size: 0.95rem !important;
+      gap: 0.75rem !important;
+    }
+    #historyForm > div {
+      width: 100% !important;
+      justify-content: space-between;
+    }
+    #historyForm label {
+      font-size: 0.85rem !important;
+    }
+    #historyForm input,
+    #historyForm select {
+      font-size: 0.85rem !important;
+      width: 100% !important;
+      padding: 4px 6px !important;
+    }
+    /* Make table container horizontally scrollable on mobile */
+    .scrollable-container {
+      overflow-x: auto;
+      max-width: 100vw;
+      padding: 0;
+      border: none;
+      margin: 0;
+    }
+    table {
+      font-size: 0.85rem !important;
+      min-width: 600px;
+    }
+    td {
+      padding: 2px !important;
+      font-size: medium !important;
+    }
+    h2, h5 {
+      font-size: 1.2rem !important;
+    }
+  }
+</style>
 <h2 class="text-center">All Previous Results</h2>
 <form method="post" id="historyForm" 
       class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4" 
@@ -48,7 +90,6 @@ td {
     </div>
   </div>
   <div class="d-flex align-items-center">
-    <input type="hidden" id="nextDrawTime" value="{{ next_draw_time_str }}">
     Left Time: <span id="nextDraw" class="ms-1">--:--:--</span>
   </div>
 </form>
@@ -57,7 +98,6 @@ td {
     No Record found
   </div>
 {% endif %}
-
 <div class="scrollable-container">
   {% for group in result_tables %}
     <h5 class="text-center" style="font-size: 1.50rem;">
@@ -69,16 +109,16 @@ td {
       <tr>
         {% for cell in row %}
         <td style=" background-color: 
-          {% if forloop.counter0 == 0 %}#FFD700
-          {% elif forloop.counter0 == 1 %}#DDA0DD
-          {% elif forloop.counter0 == 2 %}#90EE90
-          {% elif forloop.counter0 == 3 %}#FFB6C1
-          {% elif forloop.counter0 == 4 %}#CD5C5C
-          {% elif forloop.counter0 == 5 %}#F5DEB3
-          {% elif forloop.counter0 == 6 %}#ADD8E6
-          {% elif forloop.counter0 == 7 %}#FFC0CB
-          {% elif forloop.counter0 == 8 %}#87CEEB
-          {% elif forloop.counter0 == 9 %}#FFA07A
+          {% if forloop.counter0 == 0 %}#cdb4db
+          {% elif forloop.counter0 == 1 %}#ffc8dd
+          {% elif forloop.counter0 == 2 %}#ffafcc
+          {% elif forloop.counter0 == 3 %}#bde0fe
+          {% elif forloop.counter0 == 4 %}#a2d2ff
+          {% elif forloop.counter0 == 5 %}#cdb4db
+          {% elif forloop.counter0 == 6 %}#ffc8dd
+          {% elif forloop.counter0 == 7 %}#ffafcc
+          {% elif forloop.counter0 == 8 %}#bde0fe
+          {% elif forloop.counter0 == 9 %}#a2d2ff
           {% endif %};">
           {% if cell %}
             {{ cell.number }}
@@ -93,101 +133,80 @@ td {
   {% endfor %}
 </div>
 <script>
+function pad(num) {
+  return String(num).padStart(2, '0');
+}
+
+function getNextDrawTime(now) {
+  const drawStart = new Date(now);
+  drawStart.setHours(9, 0, 0, 0);
+
+  const drawEnd = new Date(now);
+  drawEnd.setHours(21, 30, 0, 0);
+
+  if (now < drawStart) {
+    return drawStart;
+  }
+
+  if (now > drawEnd) {
+    // After last slot: next day's 9:00 AM
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    return tomorrow;
+  }
+
+  // Find next 15-minute slot
+  const next = new Date(now);
+  next.setSeconds(0, 0);
+  next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15);
+  if (next <= now) {
+    next.setMinutes(next.getMinutes() + 15);
+  }
+  return next;
+}
+
 function updateTimes() {
   const now = new Date();
   const kolkataTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
+  // Current time
   const currentTimeElem = document.getElementById("currentTime");
   if (currentTimeElem) {
-    const hours = kolkataTime.getHours();
-    const minutes = kolkataTime.getMinutes();
-    const seconds = kolkataTime.getSeconds();
-    const hour12 = hours % 12 || 12;
-    const ampm = hours >= 12 ? "PM" : "AM";
-    currentTimeElem.textContent =
-      `${String(hour12).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
+    let h = kolkataTime.getHours();
+    const m = kolkataTime.getMinutes();
+    const s = kolkataTime.getSeconds();
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    currentTimeElem.textContent = `${pad(h)}:${pad(m)}:${pad(s)} ${ampm}`;
   }
 
-  const nextDrawInput = document.getElementById("nextDrawTime");
+  // Next draw countdown
   const nextDrawElem = document.getElementById("nextDraw");
+  if (!nextDrawElem) return;
 
-  if (!nextDrawInput || !nextDrawElem) return;
+  const nextDrawTime = getNextDrawTime(kolkataTime);
+  let diffMs = nextDrawTime - kolkataTime;
+  if (diffMs < 0) diffMs = 0;
 
-  let nextDraw = new Date(nextDrawInput.value);
-  let diff = nextDraw - kolkataTime;
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const h = pad(Math.floor(totalSeconds / 3600));
+  const m = pad(Math.floor((totalSeconds % 3600) / 60));
+  const s = pad(totalSeconds % 60);
 
-  // If nextDraw time already passed (e.g. after 9:30 PM), set countdown to next day 9:00 AM
-  if (diff <= 0) {
-    const tomorrow9am = new Date(kolkataTime);
-    tomorrow9am.setDate(tomorrow9am.getDate() + 1);
-    tomorrow9am.setHours(9, 0, 0, 0);
-    diff = tomorrow9am - kolkataTime;
-    location.reload();
-    return;
-  }
-
-  if (diff > 0) {
-    const totalSeconds = Math.floor(diff / 1000);
-    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-    const s = String(totalSeconds % 60).padStart(2, '0');
-    nextDrawElem.textContent = `${h}:${m}:${s}`;
-  } else {
-    nextDrawElem.textContent = "00:00:00";
-  }
+  nextDrawElem.textContent = `${h}:${m}:${s}`;
 }
+
 setInterval(updateTimes, 1000);
 updateTimes();
 </script>
 <script>
+document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".autoSubmit").forEach(el => {
     el.addEventListener("change", () => {
       document.getElementById("historyForm").submit();
     });
   });
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  let nextDrawTimeStr = document.getElementById('nextDrawTime')?.value;
-
-  async function pollNextDrawTime() {
-    try {
-      const response = await fetch("{% url 'next_draw_time_api' %}");
-      const data = await response.json();
-
-      if (!data.next_draw_time_str) return;
-
-      if (data.next_draw_time_str !== nextDrawTimeStr) {
-        // New postponed time detected! Reload to reflect new countdown
-        location.reload();
-        return;
-      }
-
-      // Otherwise just update countdown
-      updateCountdownDisplay(data.total_seconds);
-    } catch (error) {
-      console.error('Error polling next draw time:', error);
-    }
-  }
-
-  function updateCountdownDisplay(totalSeconds) {
-    const countdownEl = document.getElementById('nextDraw');
-    if (!countdownEl) return;
-
-    if (totalSeconds <= 0) {
-      location.reload();
-      return;
-    }
-
-    const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-    const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-    const s = String(totalSeconds % 60).padStart(2, '0');
-    countdownEl.textContent = `${h}:${m}:${s}`;
-  }
-
-  setInterval(pollNextDrawTime, 5000);
-  pollNextDrawTime();
 });
 </script>
-
 {% endblock %}
