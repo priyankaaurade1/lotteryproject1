@@ -355,49 +355,56 @@ def next_draw_time_api(request):
         'total_seconds': total_seconds,
     })
 
+# def get_last_time_slot(now):
+#     from datetime import time, timedelta
+#     cutoff_time = now - timedelta(seconds=30)
+#     earliest_slot = time(9, 0)
+#     latest_slot = time(21, 30)
+#     current_time = cutoff_time.time()
+#     if current_time < earliest_slot:
+#         return None  # No eligible slot yet
+#     elif current_time > latest_slot:
+#         return cutoff_time.replace(hour=21, minute=30, second=0, microsecond=0)
+#     else:
+#         # Floor to nearest 15 for cutoff time
+#         minutes = (cutoff_time.minute // 15) * 15
+#         return cutoff_time.replace(minute=minutes, second=0, microsecond=0)
+
 def get_last_time_slot(now):
     from datetime import time, timedelta
 
-    cutoff_time = now - timedelta(seconds=30)
-
     earliest_slot = time(9, 0)
     latest_slot = time(21, 30)
-    current_time = cutoff_time.time()
+    current_time = now.time()
 
     if current_time < earliest_slot:
         return None  # No eligible slot yet
     elif current_time > latest_slot:
-        return cutoff_time.replace(hour=21, minute=30, second=0, microsecond=0)
+        return now.replace(hour=21, minute=30, second=0, microsecond=0)
     else:
-        # Floor to nearest 15 for cutoff time
-        minutes = (cutoff_time.minute // 15) * 15
-        return cutoff_time.replace(minute=minutes, second=0, microsecond=0)
+        # Floor to nearest 15 for current time
+        minutes = (now.minute // 15) * 15
+        return now.replace(minute=minutes, second=0, microsecond=0)
 
 def get_next_draw_time(now):
     offset = DrawOffset.get_offset()
     now_with_offset = now + offset
-
     # First and last draw times with offset
     draw_start = now_with_offset.replace(hour=9, minute=0, second=0, microsecond=0)
     draw_end = now_with_offset.replace(hour=21, minute=30, second=0, microsecond=0)
-
     if now_with_offset < draw_start:
         # Before 9:00 AM → first draw
         return draw_start - offset
-
     if now_with_offset > draw_end:
         # After last slot → next day 9:00 AM
         next_day = now_with_offset + timedelta(days=1)
         return next_day.replace(hour=9, minute=0, second=0, microsecond=0) - offset
-
     # Otherwise → round up to the next 15-minute slot
     minute_block = (now_with_offset.minute // 15 + 1) * 15
     next_time = now_with_offset.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=minute_block)
-
     if next_time > draw_end:
         # Past last slot → next day 9:00 AM
         next_time = (now_with_offset + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
-
     return next_time - offset
 
 def index(request):
@@ -417,7 +424,6 @@ def index(request):
     while start <= end:
         time_slots.append(start.strftime('%I:%M %p'))
         start += timedelta(minutes=15)
-
     if request.method == "GET" or not request.POST.get("date"):
         selected_date_obj = today
     else:
@@ -427,7 +433,6 @@ def index(request):
             selected_date_obj = today
     if selected_date_obj == today:
         time_slots = [t for t in time_slots if datetime.strptime(t, '%I:%M %p').time() <= current_time]
-
     # POST data
     selected_date = request.POST.get("date")
     selected_time = request.POST.get("time")
@@ -463,7 +468,6 @@ def index(request):
     chart_prefix = "00"
     results_exist = False
     current_slot_label = ""
-
     # All Times mode
     if request.method == "POST" and request.POST.get("time") == "" and request.POST.get("mode") == "full":
         show_history = "4"
@@ -477,7 +481,6 @@ def index(request):
             if result.row < 10 and result.column < 10:
                 time_slot_groups[label][result.row][result.column] = result
         history_data = list(time_slot_groups.items())
-
     # History modes
     if show_history == "4":
         raw_history = defaultdict(lambda: [[None for _ in range(10)] for _ in range(10)])
@@ -495,7 +498,6 @@ def index(request):
                 cell_value = result.number[-2:]
             raw_history[label][result.row][result.column] = cell_value
         history_data = sorted(raw_history.items(), key=lambda x: datetime.strptime(x[0], "%I:%M %p"), reverse=True)
-
     elif show_history == "2":
         if selected_time_obj:
             if selected_date_obj == today and selected_time_obj > current_time:
@@ -514,7 +516,6 @@ def index(request):
         for result in results:
             if result.row < 10 and result.column < 10:
                 grid[result.row][result.column] = result.number[-2:]
-
     elif show_history == "1":
         if selected_time_obj:
             if selected_date_obj == today and selected_time_obj > current_time:
@@ -527,12 +528,10 @@ def index(request):
             results = LotteryResult.objects.filter(date=today, time_slot=selected_time_obj)
         else:
             results = LotteryResult.objects.filter(date=selected_date_obj)
-
         results_exist = results.exists()
         for result in results:
             if result.row < 10 and result.column < 10 and len(result.number) >= 3:
                 grid[result.row][result.column] = result.number[-2]
-
     elif show_history in [None, "", "3"]:
         user_selected_time = request.POST.get("time")
         if selected_time:
@@ -540,7 +539,6 @@ def index(request):
                 selected_time_obj = datetime.strptime(selected_time, "%I:%M %p").time()
             except ValueError:
                 selected_time_obj = None
-
         if not selected_time and user_selected_time == "":
             results = LotteryResult.objects.filter(date=selected_date_obj).order_by('time_slot')
             current_slot_label = "All Times"

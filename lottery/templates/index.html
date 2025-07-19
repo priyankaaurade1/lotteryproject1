@@ -941,10 +941,10 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Optional reload at 29 seconds into each 15-minute slot
-  if (now.getMinutes() % 15 === 0 && now.getSeconds() === 29 &&
-      now >= drawStart && now <= drawEnd) {
-    window.location.reload(true);
-  }
+  // if (now.getMinutes() % 15 === 0 && now.getSeconds() === 29 &&
+  //     now >= drawStart && now <= drawEnd) {
+  //   window.location.reload(true);
+  // }
 }
 
   setInterval(updateCountdown, 1000);
